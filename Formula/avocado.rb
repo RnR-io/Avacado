@@ -1,8 +1,8 @@
 class Avocado < Formula
   desc "Native macOS Terminal Dashboard & CLI App"
   homepage "https://github.com/RnR-io/Avacado"
-  url "https://github.com/RnR-io/Avacado/archive/refs/tags/v1.8.0.tar.gz"
-  sha256 "af5a1a024142f0de1a505d0874d4ab0d8484ea7073ff9c57baf40e1e16040dec"
+  url "https://github.com/RnR-io/Avacado/archive/refs/tags/v1.9.0.tar.gz"
+  sha256 "82b742cd3deede31cb2e19937201ee22c005d9b4b09b61c17b070a417be6ebee"
   license "MIT"
 
   depends_on "python@3"
