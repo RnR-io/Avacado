@@ -1,16 +1,15 @@
 """
-Terminal UI Utilities (ANSI Colors & TrueColor Image Matrix Render Engine v1.7.0)
-Responsive Auto-Scaling Layout Engine:
-- 3-Column Equal Split Layout for wide terminals (cols >= 95)
-- Stacked Single-Panel Layout for compact terminals (cols < 95)
-- Strict Line Truncation & Box Border Enforcement
-- TrueColor RGB Image Graphic rendering for Neofetch & Header
+Terminal UI Utilities (ANSI Colors & Theme-Adaptive Transparent Graphics Engine v1.8.0)
+Features:
+- Dynamic Theme Matching (Graphics tint to Avocado, Matrix, Dracula, Ocean, Amber themes)
+- Resilient Height & Width Scaling (Fits small terminal windows without hiding text)
+- Transparent background rendering
 """
 import os
 import sys
 import re
 from avocado.calendar_clock import get_calendar_lines, get_clock_info
-from avocado.graphics import get_avocado_graphic
+from avocado.graphics import get_theme_colored_avocado
 
 # ANSI Color Codes
 RESET = "\033[0m"
@@ -68,19 +67,16 @@ def get_theme(theme_name="avocado"):
 def clear_screen():
     print("\033[H\033[2J\033[3J", end="")
 
-def make_progress_bar(pct, length=12, fill_char="█", empty_char="░"):
+def make_progress_bar(pct, length=10, fill_char="█", empty_char="░"):
     filled = int(round(length * (pct / 100.0)))
     return fill_char * filled + empty_char * (length - filled)
 
 def truncate_and_pad(text, width):
-    """Strictly truncates text if too long and pads with spaces so box borders align 100% cleanly."""
     ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
     plain = ansi_escape.sub('', text)
 
     if len(plain) > width:
-        # Cleanly truncate plain text
-        truncated_plain = plain[:max(1, width - 1)] + "…"
-        return truncated_plain
+        return plain[:max(1, width - 1)] + "…"
     else:
         pad_len = max(0, width - len(plain))
         return text + (' ' * pad_len)
@@ -96,8 +92,8 @@ def render_neofetch(colors, status=None):
         from avocado.status import get_macos_status
         status = get_macos_status()
 
-    # Get TrueColor Avocado Image Matrix
-    graphic_lines = get_avocado_graphic(width=22)
+    # Get theme-adaptive transparent graphics
+    graphic_lines = get_theme_colored_avocado(colors, mode="normal")
 
     cpu_bar = make_progress_bar(status['cpu_usage'], 10)
     ram_bar = make_progress_bar(status['ram_pct'], 10)
@@ -117,11 +113,11 @@ def render_neofetch(colors, status=None):
         f"{t}Uptime:{r}            {status['uptime']}"
     ]
 
-    out_lines = [f"\n{BOLD}{a}AVOCADO TRUECOLOR GRAPHICS HARDWARE SUMMARY{r}\n"]
+    out_lines = [f"\n{BOLD}{a}AVOCADO THEME-MATCHED ASCII HARDWARE SUMMARY{r}\n"]
 
     max_rows = max(len(graphic_lines), len(sys_info))
     for i in range(max_rows):
-        art_l = graphic_lines[i] if i < len(graphic_lines) else " " * 22
+        art_l = graphic_lines[i] if i < len(graphic_lines) else " " * 36
         info_l = sys_info[i] if i < len(sys_info) else ""
         out_lines.append(f"  {art_l}   {info_l}")
 
@@ -140,36 +136,33 @@ def render_dashboard(status, weather, config):
     try:
         cols, rows = os.get_terminal_size()
     except Exception:
-        cols, rows = 100, 30
+        cols, rows = 100, 28
 
-    w = max(78, cols - 2)
+    w = max(76, cols - 2)
     lines = []
 
-    # Dynamic Layout Mode Selection:
-    # If terminal is narrow (cols < 95), use Single-Panel Stacked Layout
-    # If terminal is wide (cols >= 95), use 3-Column Equal Split Layout
+    # Dynamic Height Cap so small windows never hide content off bottom
+    max_visible_rows = max(6, min(rows - 9, 14))
+
+    # Single-Panel Stacked Layout for small/narrow windows (cols < 95)
     if cols < 95:
-        # Stacked Single-Panel Layout
         lines.append(f"{b}┌{'─' * (w - 2)}┐{r}")
         title_str = " [AVOCADO] MAC OS TERMINAL DASHBOARD "
         lines.append(f"{b}│{r} {a}.---.{r} {BOLD}{p}{title_str}{r}{' ' * max(0, w - 8 - len(title_str))}{b}│{r}")
         lines.append(f"{b}├{'─' * (w - 2)}┤{r}")
 
-        # Section 1: Hardware
         lines.append(f"{b}│{r} {BOLD}{h}💻 HARDWARE TELEMETRY{r}{' ' * max(0, w - 23)}{b}│{r}")
         lines.append(f"{b}│{r}  " + truncate_and_pad(f"Model: {status['model']} | OS: {status['os']} | CPU: {status['cpu_brand']}", w - 5) + f" {b}│{r}")
-        lines.append(f"{b}│{r}  " + truncate_and_pad(f"CPU Load: {status['cpu_usage']}% | RAM: {status['used_ram_gb']}/{status['total_ram_gb']}GB | Disk: {status['disk_avail']} Free", w - 5) + f" {b}│{r}")
+        lines.append(f"{b}│{r}  " + truncate_and_pad(f"CPU: {status['cpu_usage']}% | RAM: {status['used_ram_gb']}/{status['total_ram_gb']}GB | Disk: {status['disk_avail']} Free", w - 5) + f" {b}│{r}")
         lines.append(f"{b}├{'─' * (w - 2)}┤{r}")
 
-        # Section 2: Weather
-        lines.append(f"{b}│{r} {BOLD}{h}🌦 ASCII WEATHER ({weather.get('city', 'Location')}){r}{' ' * max(0, w - 21 - len(weather.get('city', 'Location')))}{b}│{r}")
+        lines.append(f"{b}│{r} {BOLD}{h}🌦 WEATHER ({weather.get('city', 'Location')}){r}{' ' * max(0, w - 15 - len(weather.get('city', 'Location')))}{b}│{r}")
         lines.append(f"{b}│{r}  " + truncate_and_pad(f"Temp: {weather.get('temp')} ({weather.get('desc')}) | Wind: {weather.get('wind')}", w - 5) + f" {b}│{r}")
         lines.append(f"{b}├{'─' * (w - 2)}┤{r}")
 
-        # Section 3: Calendar
         clock_info = get_clock_info()
-        lines.append(f"{b}│{r} {BOLD}{h}📅 CALENDAR & 12H TIME ({clock_info['time']}){r}{' ' * max(0, w - 25 - len(clock_info['time']))}{b}│{r}")
-        for cl in get_calendar_lines()[:6]:
+        lines.append(f"{b}│{r} {BOLD}{h}📅 CALENDAR ({clock_info['time']}){r}{' ' * max(0, w - 19 - len(clock_info['time']))}{b}│{r}")
+        for cl in get_calendar_lines()[:min(5, max_visible_rows)]:
             lines.append(f"{b}│{r}  " + truncate_and_pad(cl, w - 5) + f" {b}│{r}")
         lines.append(f"{b}└{'─' * (w - 2)}┘{r}")
         return "\n".join(lines)
@@ -181,7 +174,7 @@ def render_dashboard(status, weather, config):
     lines.append(f"{b}┌{'─' * (total_inner_w)}┐{r}")
     title_str = " [AVOCADO] MAC OS TERMINAL DASHBOARD & CONTROL CENTER "
     lines.append(f"{b}│{r} {a}.---.{r}  {BOLD}{p}{title_str}{r}{' ' * max(0, total_inner_w - 9 - len(title_str))}{b}│{r}")
-    lines.append(f"{b}│{r} {p}( (O) ){r} {m}TrueColor Image Graphics | Resilient Auto-Scaling Grid Layout{r}{' ' * max(0, total_inner_w - 68)}{b}│{r}")
+    lines.append(f"{b}│{r} {p}( (O) ){r} {m}Theme-Matched Transparent Graphics | Responsive Height/Width Grid{r}{' ' * max(0, total_inner_w - 71)}{b}│{r}")
     lines.append(f"{b}├{'─' * col_w}┬{'─' * (col_w + 2)}┬{'─' * col_w}┤{r}")
 
     c1_h = truncate_and_pad(f"{BOLD}{h}💻 HARDWARE TELEMETRY{r}", col_w)
@@ -238,9 +231,10 @@ def render_dashboard(status, weather, config):
     for cl in cal_lines:
         col3.append(f"{t}{cl}{r}")
 
-    max_rows = max(len(col1), len(col2), len(col3))
+    # Dynamically cap rows based on terminal window height
+    display_rows = min(max_visible_rows, max(len(col1), len(col2), len(col3)))
 
-    for idx in range(max_rows):
+    for idx in range(display_rows):
         c1 = col1[idx] if idx < len(col1) else ""
         c2 = col2[idx] if idx < len(col2) else ""
         c3 = col3[idx] if idx < len(col3) else ""
