@@ -1,6 +1,6 @@
 """
-Terminal UI Utilities (ANSI Colors & Detailed High-Density ASCII Art Render Engine)
-Renders a clean 3-Column Dashboard with detailed ASCII Avocado Art & clean calendar layout.
+Terminal UI Utilities (ANSI Colors & High-Density CRT ASCII Art Render Engine)
+Features detailed CRT ASCII Avocado graphics, 3-column equal split layout, and visual performance graphs.
 """
 import os
 import sys
@@ -56,7 +56,6 @@ THEME_COLORS = {
     }
 }
 
-# Ultra Detailed High-Density ASCII Avocado Art
 DETAILED_AVOCADO_ART = [
     "          .------------------.",
     "        .'                    '.",
@@ -72,17 +71,6 @@ DETAILED_AVOCADO_ART = [
     "       \\     ''-------------''",
     "        '.                    .'",
     "          '------------------'"
-]
-
-# Compact Header ASCII Avocado Art
-COMPACT_AVOCADO_ART = [
-    "   .-----------.",
-    "  /  .-------.  \\",
-    " |  /  ( # )  \\  |",
-    " | |  ( ### )  | |",
-    " |  \\  ( # )  /  |",
-    "  \\  '-------'  /",
-    "   '-----------'"
 ]
 
 def get_theme(theme_name="avocado"):
@@ -113,6 +101,9 @@ def render_neofetch(colors, status=None):
         from avocado.status import get_macos_status
         status = get_macos_status()
 
+    cpu_bar = make_progress_bar(status['cpu_usage'], 12)
+    ram_bar = make_progress_bar(status['ram_pct'], 12)
+
     sys_info = [
         f"{BOLD}{p}user@macbook-pro{r}",
         f"{m}----------------{r}",
@@ -120,10 +111,9 @@ def render_neofetch(colors, status=None):
         f"{t}Host:{r}              {status['model']}",
         f"{t}Kernel:{r}            {status['kernel']}",
         f"{t}GPU:{r}               {status['gpu']}",
-        f"{t}CPU:{r}               {status['cpu_brand']} ({status['cpu_cores']} Cores)",
-        f"{t}Load Avg:{r}          {status['load_avg']}",
-        f"{t}Memory:{r}            {status['used_ram_gb']} GB / {status['total_ram_gb']} GB",
-        f"{t}Swap:{r}              {status['swap_used']}",
+        f"{t}CPU:{r}               {status['cpu_brand']}",
+        f"{t}CPU Graph:{r}         [{a}{cpu_bar}{r}] {status['cpu_usage']}%",
+        f"{t}RAM Graph:{r}         [{a}{ram_bar}{r}] {status['used_ram_gb']}/{status['total_ram_gb']}GB",
         f"{t}Battery:{r}           🔋 {status['batt_pct']}% ({status['power_source']})",
         f"{t}Network:{r}           {status['local_ip']} ({status['net_if']})",
         f"{t}Uptime:{r}            {status['uptime']}"
@@ -160,14 +150,12 @@ def render_dashboard(status, weather, config):
 
     lines = []
 
-    # 1. Dashboard Header Box with Compact Detailed ASCII Avocado Icon
     lines.append(f"{b}┌{'─' * (total_inner_w)}┐{r}")
     title_str = " [AVOCADO] NATIVE MAC OS TERMINAL DASHBOARD & CONTROL CENTER "
     lines.append(f"{b}│{r} {a}.---.{r}  {BOLD}{p}{title_str}{r}{' ' * max(0, total_inner_w - 9 - len(title_str))}{b}│{r}")
-    lines.append(f"{b}│{r} {p}( (O) ){r} {m}GuacMode Enabled | High-Density Hardware Telemetry & Control Center{r}{' ' * max(0, total_inner_w - 71)}{b}│{r}")
+    lines.append(f"{b}│{r} {p}( (O) ){r} {m}GuacMode Enabled | Visual Graphs & Arrow-Key TUI Controls{r}{' ' * max(0, total_inner_w - 61)}{b}│{r}")
     lines.append(f"{b}├{'─' * col_w}┬{'─' * (col_w + 2)}┬{'─' * col_w}┤{r}")
 
-    # Column Headers (1/3 Hardware, 1/3 Weather, 1/3 Calendar & 12H Time)
     c1_h = pad_str(f"{BOLD}{h}💻 HARDWARE TELEMETRY{r}", col_w)
     c2_h = pad_str(f"{BOLD}{h}🌦 ASCII WEATHER{r}", col_w + 2)
     c3_h = pad_str(f"{BOLD}{h}📅 CALENDAR & 12H TIME{r}", col_w)
@@ -175,12 +163,10 @@ def render_dashboard(status, weather, config):
     lines.append(f"{b}│{r} {c1_h} {b}│{r} {c2_h} {b}│{r} {c3_h} {b}│{r}")
     lines.append(f"{b}├{'─' * col_w}┼{'─' * (col_w + 2)}┼{'─' * col_w}┤{r}")
 
-    # 2. Build 3 Column Content Lists
     cpu_bar = make_progress_bar(status['cpu_usage'], 10)
     ram_bar = make_progress_bar(status['ram_pct'], 10)
     disk_bar = make_progress_bar(status['disk_pct'], 10)
 
-    # Column 1: Hardware Telemetry
     col1 = [
         f"{t}Model:{r} {status['model']}",
         f"{t}OS:{r} {status['os']}",
@@ -197,7 +183,6 @@ def render_dashboard(status, weather, config):
         f"{t}Uptime:{r} {status['uptime']}"
     ]
 
-    # Column 2: ASCII Weather
     art_lines = weather.get("art", [""])
     col2 = [
         f"{BOLD}{a}{weather.get('city', 'Location')}{r}",
@@ -213,7 +198,6 @@ def render_dashboard(status, weather, config):
     for fc in weather.get("forecast", [])[:3]:
         col2.append(f" • {fc['day']}: {fc['high']} / {fc['low']}")
 
-    # Column 3: Calendar & 12-Hour System Time (Clean - Art Removed Above Calendar)
     clock_info = get_clock_info()
     cal_lines = get_calendar_lines()
 
@@ -223,7 +207,6 @@ def render_dashboard(status, weather, config):
         f"{m}{clock_info['week']}{r}",
         ""
     ]
-    # Add calendar lines directly (NO ASCII art numbers above calendar!)
     for cl in cal_lines:
         col3.append(f"{t}{cl}{r}")
 

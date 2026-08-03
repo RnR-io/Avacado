@@ -1,6 +1,6 @@
 """
-Native macOS System Hardware Telemetry Collector v1.5.0
-Expanded telemetry: CPU Sparkline Graphs, GPU Metal specs, RAM breakdown, APFS Storage, Battery cycle, Network.
+Native macOS System Hardware Telemetry Collector v1.6.0
+Features Large Multi-Line Real-Time ASCII Performance Area Graphs for CPU, RAM, Storage, and Battery.
 """
 import os
 import subprocess
@@ -8,7 +8,7 @@ import re
 import socket
 import time
 
-CPU_HISTORY = [12.0, 15.2, 10.5, 18.0, 14.1, 9.8, 11.5, 13.6, 8.4, 12.0]
+CPU_HISTORY = [12.0, 15.2, 10.5, 18.0, 25.0, 32.0, 28.5, 20.0, 14.1, 9.8, 11.5, 13.6, 18.4, 22.0, 16.5, 12.0, 14.5, 18.0]
 
 def run_cmd_args(cmd_list, timeout=3):
     try:
@@ -38,19 +38,33 @@ def get_gpu_info():
         pass
     return "Apple Metal GPU (Integrated)"
 
-def make_sparkline(history):
-    """Generates ASCII sparkline graph for CPU history ( ▂▃▄▅▆▇█)."""
-    bars = [' ', '▂', '▃', '▄', '▅', '▆', '▇', '█']
-    max_val = max(history) if history else 100.0
-    min_val = min(history) if history else 0.0
-    val_range = max(1.0, max_val - min_val)
+def render_cpu_multiline_graph(history, width=40):
+    """Renders a 4-line high-density ASCII Area Chart for CPU load history."""
+    if not history:
+        history = [10.0] * width
+    vals = history[-width:]
+    if len(vals) < width:
+        vals = [0.0] * (width - len(vals)) + vals
 
-    spark = ""
-    for val in history[-15:]:
-        idx = int(((val - min_val) / val_range) * (len(bars) - 1))
-        idx = max(0, min(len(bars) - 1, idx))
-        spark += bars[idx]
-    return spark
+    lines = []
+    levels = [100.0, 75.0, 50.0, 25.0]
+    bars = [' ', '▂', '▃', '▄', '▅', '▆', '▇', '█']
+
+    for lev in levels:
+        row = f"  {int(lev):3d}% ┤ "
+        for v in vals:
+            if v >= lev:
+                row += "█"
+            elif v >= lev - 25.0:
+                fraction = (v - (lev - 25.0)) / 25.0
+                idx = max(0, min(len(bars) - 1, int(fraction * (len(bars) - 1))))
+                row += bars[idx]
+            else:
+                row += " "
+        lines.append(row)
+
+    lines.append("    0% └" + "─" * width)
+    return lines
 
 def get_macos_status():
     global CPU_HISTORY
@@ -88,10 +102,8 @@ def get_macos_status():
                 break
 
     CPU_HISTORY.append(cpu_usage)
-    if len(CPU_HISTORY) > 20:
+    if len(CPU_HISTORY) > 40:
         CPU_HISTORY.pop(0)
-
-    sparkline_str = make_sparkline(CPU_HISTORY)
 
     mem_size_bytes = run_cmd_args(["sysctl", "-n", "hw.memsize"])
     total_ram_gb = 16.0
@@ -148,7 +160,6 @@ def get_macos_status():
 
     batt_out = run_cmd_args(["pmset", "-g", "batt"])
     batt_pct = 98
-    is_charging = False
     power_source = "AC Adapter"
     rem_time = "Charged"
 
@@ -158,8 +169,6 @@ def get_macos_status():
         m_pct = re.search(r'(\d+)%', batt_out)
         if m_pct:
             batt_pct = int(m_pct.group(1))
-        if "charging" in batt_out.lower() and "discharging" not in batt_out.lower():
-            is_charging = True
         m_rem = re.search(r'(\d+:\d+)\s+remaining', batt_out)
         if m_rem:
             rem_time = m_rem.group(1) + " rem"
@@ -182,7 +191,7 @@ def get_macos_status():
         "cpu_user": cpu_user,
         "cpu_sys": cpu_sys,
         "load_avg": load_avg_str,
-        "sparkline": sparkline_str,
+        "cpu_history": list(CPU_HISTORY),
         "total_ram_gb": total_ram_gb,
         "used_ram_gb": used_ram_gb,
         "free_ram_gb": free_ram_gb,
@@ -191,7 +200,6 @@ def get_macos_status():
         "ram_pct": ram_pct,
         "swap_used": swap_used,
         "batt_pct": batt_pct,
-        "is_charging": is_charging,
         "power_source": power_source,
         "batt_rem_time": rem_time,
         "disk_total": disk_total,
@@ -214,41 +222,58 @@ def render_fullscreen_hardware_page(colors):
     b = colors["border"]
     r = "\033[0m"
 
-    cpu_history_spark = status["sparkline"]
+    cpu_chart_lines = render_cpu_multiline_graph(status["cpu_history"], width=45)
+
+    # Wide RAM bar chart
+    ram_bar_len = 45
+    ram_used_len = int(round(ram_bar_len * (status['ram_pct'] / 100.0)))
+    ram_bar_visual = "█" * ram_used_len + "░" * (ram_bar_len - ram_used_len)
+
+    # Wide Disk bar chart
+    disk_bar_len = 45
+    disk_used_len = int(round(disk_bar_len * (status['disk_pct'] / 100.0)))
+    disk_bar_visual = "█" * disk_used_len + "░" * (disk_bar_len - disk_used_len)
+
+    # Wide Battery bar chart
+    batt_bar_len = 45
+    batt_used_len = int(round(batt_bar_len * (status['batt_pct'] / 100.0)))
+    batt_bar_visual = "█" * batt_used_len + "░" * (batt_bar_len - batt_used_len)
 
     lines = [
-        f"\n{BOLD}{p}💻 FULL-SCREEN HARDWARE TELEMETRY & REAL-TIME PERFORMANCE GRAPHS{r}\n",
+        f"\n{BOLD}{p}💻 FULL-SCREEN HARDWARE TELEMETRY & MULTI-PARAMETER VISUAL GRAPHS{r}\n",
         f"{b}{'═' * 85}{r}",
-        f"{BOLD}{h}1. PROCESSOR & CPU CORE LOAD PERFORMANCE{r}",
-        f"  • {t}CPU Model:{r}          {status['cpu_brand']} ({status['cpu_cores']} Physical/Logical Cores)",
-        f"  • {t}CPU Load Total:{r}     [{a}{status['cpu_usage']}%{r}] (User: {status['cpu_user']}% | Sys: {status['cpu_sys']}%)",
-        f"  • {t}System Load Avg:{r}    {status['load_avg']} (1m, 5m, 15m)",
-        f"  • {t}CPU Realtime Graph:{r} [{a}{cpu_history_spark}{r}] (Sparkline Load History)",
-        "",
-        f"{BOLD}{h}2. MEMORY (RAM) & SWAP SUBSYSTEM{r}",
-        f"  • {t}Total Installed:{r}   {status['total_ram_gb']} GB Unified Memory",
-        f"  • {t}RAM Used / Free:{r}    {status['used_ram_gb']} GB Used ({status['ram_pct']}%)  |  {status['free_ram_gb']} GB Free",
-        f"  • {t}RAM Breakdown:{r}      Wired: {status['wired_ram_gb']} GB  |  Compressed: {status['compressed_ram_gb']} GB",
-        f"  • {t}Swap Memory Used:{r}   {status['swap_used']}",
-        "",
-        f"{BOLD}{h}3. GRAPHICS & ACCELERATION (GPU){r}",
-        f"  • {t}Graphics Processor:{r} {status['gpu']}",
-        f"  • {t}Metal Support:{r}      Metal 3 Hardware Acceleration Enabled",
-        "",
-        f"{BOLD}{h}4. APFS STORAGE & DISK VOLUMES{r}",
-        f"  • {t}Main APFS Volume:{r}   {status['disk_used']} Used / {status['disk_total']} Total ({status['disk_pct']}% Capacity)",
-        f"  • {t}Free Available:{r}     {status['disk_avail']} Available Space",
-        "",
-        f"{BOLD}{h}5. POWER & BATTERY TELEMETRY{r}",
-        f"  • {t}Charge Level:{r}       🔋 {status['batt_pct']}% ({status['power_source']})",
-        f"  • {t}Runtime Estimate:{r}   {status['batt_rem_time']}",
-        "",
-        f"{BOLD}{h}6. NETWORK & SYSTEM KERNEL METADATA{r}",
-        f"  • {t}Local Network IP:{r}   {status['local_ip']} ({status['net_if']})",
-        f"  • {t}Hardware Model:{r}     {status['model']}",
-        f"  • {t}Operating System:{r}   {status['os']}",
-        f"  • {t}Kernel Release:{r}     {status['kernel']}",
-        f"  • {t}System Uptime:{r}      {status['uptime']}",
-        f"{b}{'═' * 85}{r}\n"
+        f"{BOLD}{h}1. REAL-TIME CPU CORE LOAD AREA GRAPH{r}",
+        f"  Model: {status['cpu_brand']} ({status['cpu_cores']} Cores) | Load Avg: {status['load_avg']}",
+        f"  Total Load: [{a}{status['cpu_usage']}%{r}] (User: {status['cpu_user']}% | Sys: {status['cpu_sys']}%)",
+        ""
     ]
+    for c_line in cpu_chart_lines:
+        lines.append(f"{a}{c_line}{r}")
+
+    lines.extend([
+        "",
+        f"{b}{'─' * 85}{r}",
+        f"{BOLD}{h}2. UNIFIED MEMORY (RAM) ALLOCATION GRAPH{r}",
+        f"  [{a}{ram_bar_visual}{r}] {status['used_ram_gb']} / {status['total_ram_gb']} GB ({status['ram_pct']}%)",
+        f"  • Used: {status['used_ram_gb']} GB  |  Free: {status['free_ram_gb']} GB  |  Wired: {status['wired_ram_gb']} GB  |  Swap: {status['swap_used']}",
+        "",
+        f"{b}{'─' * 85}{r}",
+        f"{BOLD}{h}3. APFS STORAGE VOLUME CAPACITY GRAPH{r}",
+        f"  [{a}{disk_bar_visual}{r}] {status['disk_used']} / {status['disk_total']} ({status['disk_pct']}% Used)",
+        f"  • Available Free Disk Space: {status['disk_avail']} Free",
+        "",
+        f"{b}{'─' * 85}{r}",
+        f"{BOLD}{h}4. POWER & BATTERY CAPACITY GRAPH{r}",
+        f"  [{a}{batt_bar_visual}{r}] 🔋 {status['batt_pct']}% ({status['power_source']})",
+        f"  • Runtime Estimate: {status['batt_rem_time']}",
+        "",
+        f"{b}{'─' * 85}{r}",
+        f"{BOLD}{h}5. GRAPHICS (GPU) & SYSTEM METADATA{r}",
+        f"  • GPU Model:       {status['gpu']} (Metal 3 Acceleration Enabled)",
+        f"  • Local Network:   {status['local_ip']} ({status['net_if']})",
+        f"  • System OS:       {status['os']} ({status['kernel']})",
+        f"  • System Uptime:   {status['uptime']}",
+        f"{b}{'═' * 85}{r}\n"
+    ])
+
     return "\n".join(lines)
