@@ -1,5 +1,5 @@
 """
-Interactive Arrow-Key Menu Selection Engine (Zero Dependencies)
+Interactive Arrow-Key TUI Menu Selection Engine (Zero Dependencies)
 Reads terminal raw keypresses for Up/Down/Left/Right arrow keys and Enter.
 """
 import sys
@@ -38,10 +38,9 @@ def run_menu(title, options, default_idx=0):
     num_opts = len(options)
 
     while True:
-        # Clear line and print menu options
         sys.stdout.write("\033[H\033[2J") # Clear screen
         sys.stdout.write(f"\033[1;32m{title}\033[0m\n")
-        sys.stdout.write("Use \033[1mUP/DOWN/LEFT/RIGHT\033[0m arrows to navigate | Press \033[1mENTER\033[0m to select\n\n")
+        sys.stdout.write("Navigate with \033[1mUP/DOWN/LEFT/RIGHT\033[0m Arrow keys | Press \033[1mENTER\033[0m to select\n\n")
 
         for idx, opt in enumerate(options):
             if idx == current:
@@ -59,7 +58,7 @@ def run_menu(title, options, default_idx=0):
         elif key == 'ENTER':
             return current
         elif key in ('q', 'Q', 'ESC', 'CTRL_C'):
-            return num_opts - 1 # Quit option
+            return num_opts - 1
         elif key.isdigit():
             val = int(key) - 1
             if 0 <= val < num_opts:

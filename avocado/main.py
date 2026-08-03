@@ -1,6 +1,7 @@
 """
 Avocado Terminal Dashboard Main CLI Entry Point v1.1.0
-Features interactive arrow-key TUI menu, Google Search launcher, GitHub Repo Info, 12-Hour clock, and expanded telemetry.
+Features 3-Column Equal Split Layout (Telemetry, Weather, Calendar & 12H Clock),
+Arrow-Key TUI Menu, Google Search Launcher, and GitHub Repo Info.
 """
 import sys
 import os
@@ -88,59 +89,49 @@ Options:
         open_github_in_browser()
 
 def run_settings_prompt(config):
-    colors = get_theme(config.get("theme", "avocado"))
-    p = colors["primary"]
-    r = RESET
-
-    print(f"\n{BOLD}[SETTING] AVOCADO TERMINAL SETTINGS & PREFERENCES{r}")
-    print("--------------------------------------------------")
-    print(f"1. Theme: {config.get('theme')} (avocado, matrix, dracula, ocean, amber)")
-    print(f"2. Temperature Unit: {config.get('temp_unit')} (C, F)")
-    print(f"3. Default Location: {config.get('default_city')} ('auto' for IP location)")
-    print("4. Back to Dashboard")
-    print("--------------------------------------------------")
-
-    choice = input(f"{p}Select setting to edit (1-4): {r}").strip()
-    if choice == '1':
-        theme_choice = input(f"Enter theme name (avocado/matrix/dracula/ocean/amber): ").strip().lower()
-        if theme_choice in ['avocado', 'matrix', 'dracula', 'ocean', 'amber']:
-            config['theme'] = theme_choice
-            save_config(config)
-            print(f"Theme updated to '{theme_choice}'!")
-    elif choice == '2':
-        unit_choice = input(f"Enter temp unit (C/F): ").strip().upper()
-        if unit_choice in ['C', 'F']:
-            config['temp_unit'] = unit_choice
-            save_config(config)
-            print(f"Temperature unit set to '{unit_choice}'!")
-    elif choice == '3':
-        city_choice = input(f"Enter location/city name (or 'auto'): ").strip()
+    from avocado.menu import run_menu
+    opts = [
+        f"Theme: {config.get('theme')} (avocado/matrix/dracula/ocean/amber)",
+        f"Temperature Unit: {config.get('temp_unit')} (C/F)",
+        f"Location: {config.get('default_city')} ('auto' for IP)",
+        "Back to Dashboard"
+    ]
+    idx = run_menu("⚙️ TERMINAL SETTINGS & PREFERENCES", opts)
+    if idx == 0:
+        t_idx = run_menu("Select Theme", ["avocado", "matrix", "dracula", "ocean", "amber"])
+        config['theme'] = ["avocado", "matrix", "dracula", "ocean", "amber"][t_idx]
+        save_config(config)
+    elif idx == 1:
+        u_idx = run_menu("Select Temperature Unit", ["Celsius (°C)", "Fahrenheit (°F)"])
+        config['temp_unit'] = "C" if u_idx == 0 else "F"
+        save_config(config)
+    elif idx == 2:
+        city_choice = input("\nEnter location/city name (or 'auto'): ").strip()
         if city_choice:
             config['default_city'] = city_choice
             save_config(config)
-            print(f"Location updated to '{city_choice}'!")
 
 def run_tui_menu_navigation(config):
     """Interactive TUI menu allowing navigation with Arrow Keys & selection with Enter."""
     from avocado.menu import run_menu
     opts = [
-        "1. Dashboard View",
+        "1. Dashboard View (3-Column Equal Split)",
         "2. Google Search Launcher",
-        "3. GitHub Repository Info",
-        "4. Monthly Calendar & 12H Clock",
-        "5. Weather Forecast & ASCII Art",
-        "6. Hardware Telemetry Summary",
-        "7. Terminal Settings",
+        "3. GitHub Repository Info & About",
+        "4. Terminal Settings & Preferences",
+        "5. Monthly Calendar & 12H Digital Clock",
+        "6. Weather Forecast & ASCII Art",
+        "7. Neofetch Hardware Telemetry Summary",
         "8. Exit Avocado"
     ]
-    idx = run_menu("🥑 AVOCADO TUI MENU SELECTION", opts)
+    idx = run_menu("🥑 AVOCADO INTERACTIVE TUI MENU", opts)
     if idx == 0: return "dashboard"
     if idx == 1: return "google"
     if idx == 2: return "github"
-    if idx == 3: return "calendar"
-    if idx == 4: return "weather"
-    if idx == 5: return "status"
-    if idx == 6: return "settings"
+    if idx == 3: return "settings"
+    if idx == 4: return "calendar"
+    if idx == 5: return "weather"
+    if idx == 6: return "neofetch"
     if idx == 7: return "quit"
     return "dashboard"
 
@@ -227,8 +218,8 @@ def main():
         p = colors["primary"]
         r = RESET
 
-        print(f"\nQuick Keys: {BOLD}[g]{r}oogle search  {BOLD}[i]{r}nfo github  {BOLD}[r]{r}efresh  {BOLD}[s]{r}ettings  {BOLD}[c]{r}alendar  {BOLD}[m]{r}enu  {BOLD}[q]{r}uit")
-        print(f"{DIM}Use UP/DOWN arrows for command history | Type 'google <query>' to search | Tab autocomplete{RESET}")
+        print(f"\nQuick Keys: {BOLD}[m]{r}enu (arrow keys)  {BOLD}[g]{r}oogle search  {BOLD}[i]{r}nfo github  {BOLD}[s]{r}ettings  {BOLD}[r]{r}efresh  {BOLD}[q]{r}uit")
+        print(f"{DIM}Press 'm' for Arrow-Key TUI Menu | UP/DOWN arrows for history | Tab autocomplete{RESET}")
 
         try:
             cmd_str = input(f"\n{p}avocado > {r}").strip()
@@ -247,18 +238,22 @@ def main():
         if cmd in ["q", "quit", "exit"]:
             print("Exiting Avocado Terminal App. Have a great day!")
             break
+        elif cmd in ["m", "menu"]:
+            choice = run_tui_menu_navigation(config)
+            if choice == "google": run_google_search()
+            elif choice == "github": render_github_page()
+            elif choice == "settings": run_settings_prompt(config)
+            elif choice == "neofetch":
+                clear_screen()
+                print(render_neofetch(colors, status))
+                input("\nPress Enter to return...")
+            elif choice == "quit": break
         elif cmd in ["g", "google"]:
             query = " ".join(sub_args)
             run_google_search(query)
         elif cmd in ["i", "info", "github"]:
             render_github_page()
             input("\nPress Enter to return...")
-        elif cmd in ["m", "menu"]:
-            choice = run_tui_menu_navigation(config)
-            if choice == "google": run_google_search()
-            elif choice == "github": render_github_page()
-            elif choice == "settings": run_settings_prompt(config)
-            elif choice == "quit": break
         elif cmd in ["r", "status", "refresh"]:
             status = get_macos_status()
         elif cmd in ["s", "settings"]:
@@ -283,8 +278,8 @@ def main():
         elif cmd in ["h", "help", "?"]:
             print("""
 Available Avocado Navigation & Commands:
-  • Single Keys:  [g]oogle  [i]nfo github  [m]enu  [r]efresh  [s]ettings  [c]alendar  [w]eather  [n]eofetch  [q]uit
-  • Menu:         Type 'm' or run 'avocado --menu' for Arrow-Key + Enter TUI menu
+  • TUI Menu:     Type 'm' or run 'avocado --menu' for Arrow-Key + Enter TUI menu
+  • Single Keys:  [m]enu  [g]oogle  [i]nfo github  [r]efresh  [s]ettings  [c]alendar  [w]eather  [n]eofetch  [q]uit
   • Google:       Type 'google <query>' or 'g <query>' to search Google in browser
   • GitHub:       Type 'info' or 'i' to view repository details
   • Arrows:       UP / DOWN arrows cycle through typed command history
