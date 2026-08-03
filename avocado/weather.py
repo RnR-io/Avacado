@@ -1,6 +1,6 @@
 """
-Terminal Weather Fetcher & ASCII Art Formatter (Open-Meteo API)
-Hardened against SSRF and arbitrary URL schemes.
+Terminal Weather Fetcher & ASCII Art Formatter (Open-Meteo API & IP Geolocation)
+Supports Celsius (°C) as default and IP-based auto location detection.
 """
 import urllib.request
 import urllib.parse
@@ -48,10 +48,9 @@ ASCII_WEATHER_ART = {
 
 def sanitize_city(city_name):
     if not city_name or not isinstance(city_name, str):
-        return "San Francisco"
-    # Keep alphanumeric, spaces, commas, hyphens
+        return "auto"
     cleaned = re.sub(r'[^a-zA-Z0-9\s,\.-]', '', city_name).strip()
-    return cleaned if cleaned else "San Francisco"
+    return cleaned if cleaned else "auto"
 
 def safe_http_get(url_str, timeout=4):
     """Executes HTTP GET only over strict HTTPS protocol."""
@@ -63,6 +62,16 @@ def safe_http_get(url_str, timeout=4):
     )
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         return json.loads(resp.read().decode('utf-8'))
+
+def auto_detect_ip_location():
+    """Auto-detect city location via HTTPS IP Geolocation API."""
+    try:
+        data = safe_http_get("https://ipapi.co/json/", timeout=3)
+        if data and "city" in data and "country_code" in data:
+            return f"{data['city']}, {data['country_code']}", data.get("latitude"), data.get("longitude")
+    except Exception:
+        pass
+    return "San Francisco, US", 37.7749, -122.4194
 
 def get_weather_art_key(code):
     if code == 0: return "clear"
@@ -84,28 +93,34 @@ def get_weather_desc(code):
     if code >= 95: return "Thunderstorm"
     return "Moderate"
 
-def get_weather(city_name="San Francisco", temp_unit="F"):
+def get_weather(city_name="auto", temp_unit="C"):
     clean_city = sanitize_city(city_name)
+    lat, lon = None, None
+    display_name = clean_city
+
     try:
-        geo_url = f"https://geocoding-api.open-meteo.com/v1/search?name={urllib.parse.quote(clean_city)}&count=1&language=en&format=json"
-        geo_data = safe_http_get(geo_url)
+        if clean_city.lower() == "auto":
+            display_name, lat, lon = auto_detect_ip_location()
+        else:
+            geo_url = f"https://geocoding-api.open-meteo.com/v1/search?name={urllib.parse.quote(clean_city)}&count=1&language=en&format=json"
+            geo_data = safe_http_get(geo_url)
+            if geo_data.get("results"):
+                loc = geo_data["results"][0]
+                lat, lon = loc["latitude"], loc["longitude"]
+                display_name = f"{loc['name']}, {loc.get('country_code', '').upper()}"
 
-        if not geo_data.get("results"):
-            return _default_weather(clean_city, temp_unit)
+        if lat is None or lon is None:
+            display_name, lat, lon = "San Francisco, US", 37.7749, -122.4194
 
-        loc = geo_data["results"][0]
-        lat, lon = loc["latitude"], loc["longitude"]
-        display_name = f"{loc['name']}, {loc.get('country_code', '').upper()}"
-
-        is_f = temp_unit.upper() == 'F'
-        unit_param = "&temperature_unit=fahrenheit" if is_f else ""
+        is_c = temp_unit.upper() == 'C'
+        unit_param = "" if is_c else "&temperature_unit=fahrenheit"
         w_url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current_weather=true&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=auto{unit_param}"
 
         w_data = safe_http_get(w_url)
         cur = w_data.get("current_weather", {})
         code = cur.get("weathercode", 0)
 
-        unit_str = "°F" if is_f else "°C"
+        unit_str = "°C" if is_c else "°F"
         daily = w_data.get("daily", {})
         forecast_list = []
 
@@ -125,9 +140,9 @@ def get_weather(city_name="San Francisco", temp_unit="F"):
 
         return {
             "city": display_name,
-            "temp": f"{round(cur.get('temperature', 68))}{unit_str}",
+            "temp": f"{round(cur.get('temperature', 22))}{unit_str}",
             "desc": get_weather_desc(code),
-            "wind": f"{cur.get('windspeed', 8)} km/h",
+            "wind": f"{cur.get('windspeed', 12)} km/h",
             "art": ASCII_WEATHER_ART.get(art_key, ASCII_WEATHER_ART["cloudy"]),
             "forecast": forecast_list
         }
@@ -135,16 +150,17 @@ def get_weather(city_name="San Francisco", temp_unit="F"):
         return _default_weather(clean_city, temp_unit)
 
 def _default_weather(city_name, temp_unit):
-    unit_str = "°F" if temp_unit.upper() == 'F' else "°C"
+    unit_str = "°C" if temp_unit.upper() == 'C' else "°F"
+    temp_val = "22" if temp_unit.upper() == 'C' else "72"
     return {
-        "city": city_name,
-        "temp": f"68{unit_str}",
+        "city": city_name if city_name != "auto" else "San Francisco, US",
+        "temp": f"{temp_val}{unit_str}",
         "desc": "Partly Cloudy",
-        "wind": "10 km/h",
+        "wind": "12 km/h",
         "art": ASCII_WEATHER_ART["clear"],
         "forecast": [
-            {"day": "Mon", "high": f"70{unit_str}", "low": f"55{unit_str}"},
-            {"day": "Tue", "high": f"68{unit_str}", "low": f"54{unit_str}"},
-            {"day": "Wed", "high": f"72{unit_str}", "low": f"56{unit_str}"}
+            {"day": "Mon", "high": f"24{unit_str}", "low": f"14{unit_str}"},
+            {"day": "Tue", "high": f"22{unit_str}", "low": f"13{unit_str}"},
+            {"day": "Wed", "high": f"25{unit_str}", "low": f"15{unit_str}"}
         ]
     }

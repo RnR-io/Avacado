@@ -10,7 +10,6 @@ from avocado.config import load_config, save_config
 from avocado.status import get_macos_status
 from avocado.weather import get_weather
 from avocado.calendar_clock import get_calendar_lines, get_clock_info
-from avocado.apps import get_installed_mac_apps, launch_mac_app
 from avocado.ui import render_dashboard, render_neofetch, clear_screen, get_theme, RESET, BOLD, DIM
 
 def run_settings_prompt(config):
@@ -21,8 +20,8 @@ def run_settings_prompt(config):
     print(f"\n{BOLD}[SETTING] AVOCADO TERMINAL SETTINGS & PREFERENCES{r}")
     print("--------------------------------------------------")
     print(f"1. Theme: {config.get('theme')} (avocado, matrix, dracula, ocean, amber)")
-    print(f"2. Temperature Unit: {config.get('temp_unit')} (F, C)")
-    print(f"3. Default City: {config.get('default_city')}")
+    print(f"2. Temperature Unit: {config.get('temp_unit')} (C, F)")
+    print(f"3. Default Location: {config.get('default_city')} ('auto' for IP location)")
     print("4. Back to Dashboard")
     print("--------------------------------------------------")
 
@@ -34,31 +33,29 @@ def run_settings_prompt(config):
             save_config(config)
             print(f"Theme updated to '{theme_choice}'!")
     elif choice == '2':
-        unit_choice = input(f"Enter temp unit (F/C): ").strip().upper()
-        if unit_choice in ['F', 'C']:
+        unit_choice = input(f"Enter temp unit (C/F): ").strip().upper()
+        if unit_choice in ['C', 'F']:
             config['temp_unit'] = unit_choice
             save_config(config)
             print(f"Temperature unit set to '{unit_choice}'!")
     elif choice == '3':
-        city_choice = input(f"Enter default city name: ").strip()
+        city_choice = input(f"Enter location/city name (or 'auto'): ").strip()
         if city_choice:
             config['default_city'] = city_choice
             save_config(config)
-            print(f"Default city updated to '{city_choice}'!")
+            print(f"Location updated to '{city_choice}'!")
 
 def main():
     parser = argparse.ArgumentParser(description="Avocado: Native macOS Terminal Dashboard & CLI App")
-    parser.add_argument("--status", action="store_true", help="Print laptop hardware status and exit")
+    parser.add_argument("--status", action="store_true", help="Print expanded laptop hardware telemetry and exit")
     parser.add_argument("--weather", type=str, help="Get weather forecast for a city")
     parser.add_argument("--calendar", action="store_true", help="Print monthly calendar and system time")
     parser.add_argument("--neofetch", action="store_true", help="Render macOS system neofetch ASCII art")
-    parser.add_argument("--apps", action="store_true", help="List installed native macOS apps")
     parser.add_argument("--settings", action="store_true", help="Open terminal settings configuration")
     parser.add_argument("--once", action="store_true", help="Render dashboard once and exit")
 
     args = parser.parse_args()
     config = load_config()
-    mac_apps = get_installed_mac_apps()
 
     if args.neofetch:
         colors = get_theme(config.get("theme", "avocado"))
@@ -68,14 +65,17 @@ def main():
     if args.status:
         st = get_macos_status()
         print(f"Model: {st['model']} ({st['os']})")
-        print(f"CPU: {st['cpu_brand']} - Load: {st['cpu_usage']}%")
-        print(f"RAM: {st['used_ram_gb']}GB / {st['total_ram_gb']}GB ({st['ram_pct']}%)")
+        print(f"Kernel: {st['kernel']}")
+        print(f"CPU: {st['cpu_brand']} - Load: {st['cpu_usage']}% (User: {st['cpu_user']}% | Sys: {st['cpu_sys']}%)")
+        print(f"RAM: {st['used_ram_gb']}GB / {st['total_ram_gb']}GB ({st['ram_pct']}%) [Free: {st['free_ram_gb']}GB]")
+        print(f"Disk: {st['disk_used']} / {st['disk_total']} ({st['disk_avail']} Free)")
         print(f"Battery: {st['batt_pct']}% ({st['power_source']})")
+        print(f"Network: {st['local_ip']} ({st['net_if']})")
         print(f"Uptime: {st['uptime']}")
         return
 
     if args.weather:
-        w = get_weather(args.weather, config.get("temp_unit", "F"))
+        w = get_weather(args.weather, config.get("temp_unit", "C"))
         print(f"Weather for {w['city']}: {w['temp']} - {w['desc']} (Wind: {w['wind']})")
         for line in w.get("art", []):
             print(line)
@@ -88,33 +88,27 @@ def main():
             print(line)
         return
 
-    if args.apps:
-        print("Installed Native macOS Applications:")
-        for idx, app_name in enumerate(mac_apps):
-            print(f" [{idx+1}] {app_name}")
-        return
-
     if args.settings:
         run_settings_prompt(config)
         return
 
     status = get_macos_status()
-    weather = get_weather(config.get("default_city", "San Francisco"), config.get("temp_unit", "F"))
+    weather = get_weather(config.get("default_city", "auto"), config.get("temp_unit", "C"))
 
     if args.once:
-        print(render_dashboard(status, weather, mac_apps, config))
+        print(render_dashboard(status, weather, config))
         return
 
     # Main Interactive Command Loop
     while True:
         clear_screen()
-        print(render_dashboard(status, weather, mac_apps, config))
+        print(render_dashboard(status, weather, config))
 
         colors = get_theme(config.get("theme", "avocado"))
         p = colors["primary"]
         r = RESET
 
-        print(f"\nType {BOLD}'help'{r}, {BOLD}'weather [city]'{r}, {BOLD}'calendar'{r}, {BOLD}'open [1-10|app_name]'{r}, {BOLD}'settings'{r}, or {BOLD}'quit'{r}.")
+        print(f"\nType {BOLD}'help'{r}, {BOLD}'weather [city]'{r}, {BOLD}'calendar'{r}, {BOLD}'status'{r}, {BOLD}'settings'{r}, or {BOLD}'quit'{r}.")
         try:
             cmd_str = input(f"\n{p}avocado > {r}").strip()
         except (KeyboardInterrupt, EOFError):
@@ -136,11 +130,9 @@ def main():
             print("""
 Available Avocado Commands:
   • neofetch           - Display Apple ASCII logo and hardware specs
-  • status             - Refresh and show laptop system metrics
+  • status             - Refresh and show expanded laptop system metrics
   • weather [city]     - Search weather forecast for any city with ASCII art
   • calendar           - Show monthly calendar and digital clock
-  • apps               - List native installed macOS applications
-  • open [name|idx]    - Launch native macOS app (e.g. 'open 1', 'open Safari', 'open Chrome')
   • settings           - Open terminal settings configuration prompt
   • theme [name]       - Change theme (avocado, matrix, dracula, ocean, amber)
   • clear              - Clear screen
@@ -154,8 +146,8 @@ Available Avocado Commands:
         elif cmd == "status":
             status = get_macos_status()
         elif cmd == "weather":
-            city = " ".join(sub_args) if sub_args else config.get("default_city", "San Francisco")
-            weather = get_weather(city, config.get("temp_unit", "F"))
+            city = " ".join(sub_args) if sub_args else config.get("default_city", "auto")
+            weather = get_weather(city, config.get("temp_unit", "C"))
         elif cmd == "calendar":
             clear_screen()
             clock = get_clock_info()
@@ -163,21 +155,11 @@ Available Avocado Commands:
             for line in get_calendar_lines():
                 print(line)
             input("\nPress Enter to return...")
-        elif cmd == "apps":
-            print("\nInstalled macOS Applications:")
-            for idx, a in enumerate(mac_apps):
-                print(f" [{idx+1}] {a}")
-            input("\nPress Enter to return...")
-        elif cmd == "open":
-            target = " ".join(sub_args)
-            success, msg = launch_mac_app(target, mac_apps)
-            print(f"\n{msg}")
-            time.sleep(1)
         elif cmd == "settings":
             run_settings_prompt(config)
             config = load_config()
             status = get_macos_status()
-            weather = get_weather(config.get("default_city", "San Francisco"), config.get("temp_unit", "F"))
+            weather = get_weather(config.get("default_city", "auto"), config.get("temp_unit", "C"))
         elif cmd == "theme":
             if sub_args and sub_args[0].lower() in ['avocado', 'matrix', 'dracula', 'ocean', 'amber']:
                 config['theme'] = sub_args[0].lower()

@@ -1,6 +1,6 @@
 """
 Avocado Configuration Manager
-Persists user settings in ~/.config/avocado/config.json with strict file permissions (0700/0600).
+Persists user settings in ~/.config/avocado/config.json with strict permissions (0700/0600).
 """
 import os
 import json
@@ -10,16 +10,9 @@ CONFIG_FILE = os.path.join(CONFIG_DIR, "config.json")
 
 DEFAULT_CONFIG = {
     "theme": "avocado",
-    "temp_unit": "F",
-    "default_city": "San Francisco",
-    "refresh_rate": 2,
-    "favorite_apps": [
-        {"name": "Safari", "url": "Safari"},
-        {"name": "Google Chrome", "url": "Google Chrome"},
-        {"name": "ChatGPT", "url": "ChatGPT"},
-        {"name": "Terminal", "url": "Terminal"},
-        {"name": "Notes", "url": "Notes"}
-    ]
+    "temp_unit": "C",           # Celsius as default
+    "default_city": "auto",     # Auto location detection
+    "refresh_rate": 2
 }
 
 def ensure_secure_dir():

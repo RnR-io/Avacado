@@ -1,6 +1,6 @@
 """
 Terminal UI Utilities (ANSI Colors & Box-Drawing Grid Layout)
-ASCII Art Avocado Icon & Layout Engine.
+Stylized 3-panel dashboard layout (Hardware Telemetry, Weather ASCII Art, Calendar & Clock).
 """
 import os
 import sys
@@ -56,13 +56,6 @@ THEME_COLORS = {
     }
 }
 
-ASCII_AVOCADO_ICON = [
-    "  ( \\  ",
-    " /   \\ ",
-    "( (O) )",
-    " \\___/ "
-]
-
 def get_theme(theme_name="avocado"):
     return THEME_COLORS.get(theme_name.lower(), THEME_COLORS["avocado"])
 
@@ -94,7 +87,7 @@ def render_neofetch(colors):
 """
     return art
 
-def render_dashboard(status, weather, mac_apps, config):
+def render_dashboard(status, weather, config):
     colors = get_theme(config.get("theme", "avocado"))
     p = colors["primary"]
     a = colors["accent"]
@@ -116,28 +109,31 @@ def render_dashboard(status, weather, mac_apps, config):
     lines.append(f"{b}┌{'─' * (w - 2)}┐{r}")
     title_str = f" [AVOCADO] MAC OS TERMINAL DASHBOARD "
     lines.append(f"{b}│{r} {a}( \\{r}  {BOLD}{p}{title_str}{r}{' ' * (w - 11 - len(title_str))}{b}│{r}")
-    lines.append(f"{b}│{r} {p}( (O) ){r} {m}Native System Telemetry & Control Center{r}{' ' * (w - 49)}{b}│{r}")
+    lines.append(f"{b}│{r} {p}( (O) ){r} {m}Native Hardware Telemetry & Control Center{r}{' ' * (w - 49)}{b}│{r}")
     lines.append(f"{b}├{'─' * (w - 2)}┤{r}")
 
-    # 2. Laptop Hardware Status Section
-    lines.append(f"{b}│{r} {BOLD}{h}LAPTOP HARDWARE STATUS{r} {m}({status['os']}){r}{' ' * (w - 30 - len(status['os']))}{b}│{r}")
-    lines.append(f"{b}│{r}  {t}Model:{r} {status['model']}  |  {t}CPU:{r} {status['cpu_brand']}")
+    # 2. Expanded Laptop Hardware Telemetry Section
+    lines.append(f"{b}│{r} {BOLD}{h}💻 LAPTOP HARDWARE TELEMETRY{r} {m}({status['os']}){r}{' ' * (w - 35 - len(status['os']))}{b}│{r}")
+    lines.append(f"{b}│{r}  {t}Model:{r} {status['model']}  |  {t}Kernel:{r} {status['kernel']}")
+    lines.append(f"{b}│{r}  {t}CPU:{r} {status['cpu_brand']} ({status['cpu_cores']} Cores)")
 
     cpu_bar = make_progress_bar(status['cpu_usage'], 14)
     ram_bar = make_progress_bar(status['ram_pct'], 14)
     disk_bar = make_progress_bar(status['disk_pct'], 14)
 
-    lines.append(f"{b}│{r}  {t}CPU Load:{r} [{a}{cpu_bar}{r}] {status['cpu_usage']}%  |  {t}RAM:{r} [{a}{ram_bar}{r}] {status['used_ram_gb']}GB / {status['total_ram_gb']}GB ({status['ram_pct']}%)")
-    lines.append(f"{b}│{r}  {t}Storage:{r} [{a}{disk_bar}{r}] {status['disk_avail']} Free  |  {t}Battery:{r} {status['batt_pct']}% ({status['power_source']})")
-    lines.append(f"{b}│{r}  {t}Uptime:{r} {status['uptime']}")
+    lines.append(f"{b}│{r}  {t}CPU Load:{r} [{a}{cpu_bar}{r}] {status['cpu_usage']}% {m}(User: {status['cpu_user']}% | Sys: {status['cpu_sys']}%){r}")
+    lines.append(f"{b}│{r}  {t}RAM Usage:{r} [{a}{ram_bar}{r}] {status['used_ram_gb']}GB / {status['total_ram_gb']}GB ({status['ram_pct']}%) {m}[Free: {status['free_ram_gb']}GB | Swap: {status['swap_used']}]{r}")
+    lines.append(f"{b}│{r}  {t}APFS Disk:{r} [{a}{disk_bar}{r}] {status['disk_used']} / {status['disk_total']} {m}({status['disk_avail']} Free | {status['disk_pct']}% Used){r}")
+    lines.append(f"{b}│{r}  {t}Battery:{r} 🔋 {status['batt_pct']}% ({status['power_source']})  |  {t}Network IP:{r} {status['local_ip']} ({status['net_if']})")
+    lines.append(f"{b}│{r}  {t}System Uptime:{r} {status['uptime']}")
     lines.append(f"{b}├{'─' * (w - 2)}┤{r}")
 
     # 3. Weather & Forecast Section
-    lines.append(f"{b}│{r} {BOLD}{h}WEATHER FORECAST{r} {m}({weather.get('city', 'San Francisco')}){r}{' ' * (w - 25 - len(weather.get('city', 'San Francisco')))}{b}│{r}")
+    lines.append(f"{b}│{r} {BOLD}{h}🌦 ASCII WEATHER FORECAST{r} {m}({weather.get('city', 'Auto Location')}){r}{' ' * (w - 32 - len(weather.get('city', 'Auto Location')))}{b}│{r}")
 
     art_lines = weather.get("art", [""])
-    weather_info_header = f"Temp: {BOLD}{weather.get('temp', '68°F')}{r} ({weather.get('desc', 'Clear')}) | Wind: {weather.get('wind', '10 km/h')}"
-    
+    weather_info_header = f"Temp: {BOLD}{weather.get('temp', '22°C')}{r} ({weather.get('desc', 'Clear')}) | Wind: {weather.get('wind', '12 km/h')}"
+
     for art_l in art_lines:
         lines.append(f"{b}│{r}  {a}{art_l}{r}  |  {t}{weather_info_header}{r}")
         weather_info_header = ""
@@ -149,33 +145,15 @@ def render_dashboard(status, weather, mac_apps, config):
 
     lines.append(f"{b}├{'─' * (w - 2)}┤{r}")
 
-    # 4. Calendar & System Time Section
-    lines.append(f"{b}│{r} {BOLD}{h}MONTHLY CALENDAR & SYSTEM TIME{r}{' ' * (w - 32)}{b}│{r}")
-    
+    # 4. Monthly Calendar & System Time Section
+    lines.append(f"{b}│{r} {BOLD}{h}📅 MONTHLY CALENDAR & SYSTEM TIME{r}{' ' * (w - 34)}{b}│{r}")
+
     cal_lines = get_calendar_lines()
     clock_info = get_clock_info()
 
     lines.append(f"{b}│{r}  {BOLD}{a}TIME: {clock_info['time']}{r}  |  {t}{clock_info['date']} ({clock_info['week']}){r}")
     for cl in cal_lines[:6]:
         lines.append(f"{b}│{r}  {t}{cl}{r}")
-
-    lines.append(f"{b}├{'─' * (w - 2)}┤{r}")
-
-    # 5. Native macOS Installed Applications Dock Section
-    lines.append(f"{b}│{r} {BOLD}{h}INSTALLED MAC OS APPS DOCK{r} {m}(Type 'open 1' or 'open Safari'){r}{' ' * (w - 55)}{b}│{r}")
-
-    dock_row1 = "  "
-    dock_row2 = "  "
-    for idx, app_name in enumerate(mac_apps[:10]):
-        badge = f"[{a}{idx+1}{r}] {app_name}"
-        if idx < 5:
-            dock_row1 += f"{badge}   "
-        else:
-            dock_row2 += f"{badge}   "
-
-    lines.append(f"{b}│{r}{dock_row1}")
-    if dock_row2.strip():
-        lines.append(f"{b}│{r}{dock_row2}")
 
     lines.append(f"{b}└{'─' * (w - 2)}┘{r}")
 
