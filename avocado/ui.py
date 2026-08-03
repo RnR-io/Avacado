@@ -1,6 +1,6 @@
 """
-Terminal UI Utilities (ANSI Colors & 3-Column Equal 1/3 Split Grid Layout)
-Renders a clean 3-Column Dashboard: Left 1/3 (Hardware Stats), Middle 1/3 (ASCII Weather), Right 1/3 (Calendar & Clock).
+Terminal UI Utilities (ANSI Colors & High-Density CRT ASCII Art Render Engine)
+Features detailed high-definition CRT ASCII Avocado graphics, 3-column equal split layout, and high-density weather banners.
 """
 import os
 import sys
@@ -56,6 +56,21 @@ THEME_COLORS = {
     }
 }
 
+# Detailed High-Definition ASCII Avocado Art (from CRT image reference)
+HIGH_DEF_AVOCADO_NEOFETCH = [
+    "         .-------------.",
+    "       .'   .-------.   '.",
+    "      /   .'         '.   \\",
+    "     |   /   .-----.   \\   |",
+    "     |  |   /   #   \\   |  |",
+    "     |  |  |   ###   |  |  |",
+    "     |  |   \\   #   /   |  |",
+    "     |   \\   '-----'   /   |",
+    "      \\   '.         .'   /",
+    "       '.   '-------'   .'",
+    "         '-------------'",
+]
+
 def get_theme(theme_name="avocado"):
     return THEME_COLORS.get(theme_name.lower(), THEME_COLORS["avocado"])
 
@@ -67,7 +82,6 @@ def make_progress_bar(pct, length=12, fill_char="█", empty_char="░"):
     return fill_char * filled + empty_char * (length - filled)
 
 def pad_str(text, width):
-    """Pads string with spaces to exact width while respecting ANSI color codes."""
     import re
     ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
     plain = ansi_escape.sub('', text)
@@ -85,21 +99,31 @@ def render_neofetch(colors, status=None):
         from avocado.status import get_macos_status
         status = get_macos_status()
 
-    art = f"""
-{a}      ( \\              avocado-cli{r}        user@macbook-pro
-{a}     /   \\             -----------{r}        ----------------
-{p}    ( (O) )            {t}OS:{r}                {status['os']}
-{p}     \\___/             {t}Host:{r}              {status['model']}
-{p}                       {t}Kernel:{r}            {status['kernel']}
-{m}                       {t}GPU:{r}               {status['gpu']}
-{m}                       {t}Uptime:{r}            {status['uptime']}
-{m}                       {t}Load Avg:{r}          {status['load_avg']}
-{m}                       {t}CPU:{r}               {status['cpu_brand']} ({status['cpu_cores']} Cores)
-{m}                       {t}Memory:{r}            {status['used_ram_gb']} GB / {status['total_ram_gb']} GB (Swap: {status['swap_used']})
-{m}                       {t}Battery:{r}           🔋 {status['batt_pct']}% ({status['power_source']})
-{m}                       {t}Network:{r}           {status['local_ip']} ({status['net_if']})
-"""
-    return art
+    sys_info = [
+        f"{BOLD}{p}user@macbook-pro{r}",
+        f"{m}----------------{r}",
+        f"{t}OS:{r}                {status['os']}",
+        f"{t}Host:{r}              {status['model']}",
+        f"{t}Kernel:{r}            {status['kernel']}",
+        f"{t}GPU:{r}               {status['gpu']}",
+        f"{t}CPU:{r}               {status['cpu_brand']} ({status['cpu_cores']} Cores)",
+        f"{t}Load Avg:{r}          {status['load_avg']}",
+        f"{t}Memory:{r}            {status['used_ram_gb']} GB / {status['total_ram_gb']} GB",
+        f"{t}Swap:{r}              {status['swap_used']}",
+        f"{t}Battery:{r}           🔋 {status['batt_pct']}% ({status['power_source']})",
+        f"{t}Network:{r}           {status['local_ip']} ({status['net_if']})",
+        f"{t}Uptime:{r}            {status['uptime']}"
+    ]
+
+    out_lines = [f"\n{BOLD}{a}AVOCADO HIGH-DEFINITION ASCII HARDWARE SYSTEM SUMMARY{r}\n"]
+
+    max_rows = max(len(HIGH_DEF_AVOCADO_NEOFETCH), len(sys_info))
+    for i in range(max_rows):
+        art_l = HIGH_DEF_AVOCADO_NEOFETCH[i] if i < len(HIGH_DEF_AVOCADO_NEOFETCH) else " " * 27
+        info_l = sys_info[i] if i < len(sys_info) else ""
+        out_lines.append(f"  {a}{art_l}{r}   {info_l}")
+
+    return "\n".join(out_lines) + "\n"
 
 def render_dashboard(status, weather, config):
     colors = get_theme(config.get("theme", "avocado"))
@@ -117,17 +141,16 @@ def render_dashboard(status, weather, config):
         cols, rows = 115, 30
 
     w = max(100, cols - 2)
-    # Calculate 1/3 column width
     col_w = max(30, (w - 6) // 3)
     total_inner_w = col_w * 3 + 4
 
     lines = []
 
-    # 1. Header Box
+    # 1. Header Box with High-Def ASCII Avocado Pit Icon
     lines.append(f"{b}┌{'─' * (total_inner_w)}┐{r}")
-    title_str = " [AVOCADO] MAC OS TERMINAL DASHBOARD "
-    lines.append(f"{b}│{r} {a}( \\{r}  {BOLD}{p}{title_str}{r}{' ' * max(0, total_inner_w - 9 - len(title_str))}{b}│{r}")
-    lines.append(f"{b}│{r} {p}( (O) ){r} {m}Native Hardware Telemetry & Interactive Control Center{r}{' ' * max(0, total_inner_w - 55)}{b}│{r}")
+    title_str = " [AVOCADO] NATIVE MAC OS TERMINAL DASHBOARD & CONTROL CENTER "
+    lines.append(f"{b}│{r} {a}.---.{r}  {BOLD}{p}{title_str}{r}{' ' * max(0, total_inner_w - 9 - len(title_str))}{b}│{r}")
+    lines.append(f"{b}│{r} {p}( (O) ){r} {m}GuacMode Enabled | High-Density Telemetry & Arrow-Key TUI Controls{r}{' ' * max(0, total_inner_w - 68)}{b}│{r}")
     lines.append(f"{b}├{'─' * col_w}┬{'─' * (col_w + 2)}┬{'─' * col_w}┤{r}")
 
     # Column Headers (1/3 Hardware, 1/3 Weather, 1/3 Calendar & Time)
@@ -139,7 +162,6 @@ def render_dashboard(status, weather, config):
     lines.append(f"{b}├{'─' * col_w}┼{'─' * (col_w + 2)}┼{'─' * col_w}┤{r}")
 
     # 2. Build Column Content Lists
-    # Column 1 (Hardware Telemetry)
     cpu_bar = make_progress_bar(status['cpu_usage'], 10)
     ram_bar = make_progress_bar(status['ram_pct'], 10)
     disk_bar = make_progress_bar(status['disk_pct'], 10)
@@ -160,7 +182,6 @@ def render_dashboard(status, weather, config):
         f"{t}Uptime:{r} {status['uptime']}"
     ]
 
-    # Column 2 (Weather & Forecast)
     art_lines = weather.get("art", [""])
     col2 = [
         f"{BOLD}{a}{weather.get('city', 'Location')}{r}",
@@ -176,7 +197,6 @@ def render_dashboard(status, weather, config):
     for fc in weather.get("forecast", [])[:3]:
         col2.append(f" • {fc['day']}: {fc['high']} / {fc['low']}")
 
-    # Column 3 (Calendar & 12-Hour Digital Clock)
     clock_info = get_clock_info()
     cal_lines = get_calendar_lines()
     banner = clock_info["large_banner"]
@@ -193,7 +213,6 @@ def render_dashboard(status, weather, config):
     for cl in cal_lines[:6]:
         col3.append(f"{t}{cl}{r}")
 
-    # Zip rows across 3 columns
     max_rows = max(len(col1), len(col2), len(col3))
 
     for idx in range(max_rows):
