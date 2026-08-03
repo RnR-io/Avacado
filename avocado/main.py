@@ -1,16 +1,63 @@
 """
 Avocado Terminal Dashboard Main CLI Entry Point
+Features readline command history (Up/Down arrow navigation), tab completion, and single-key shortcuts.
 """
 import sys
 import os
 import argparse
 import time
 
-from avocado.config import load_config, save_config
+try:
+    import readline
+    HAVE_READLINE = True
+except ImportError:
+    HAVE_READLINE = False
+
+from avocado.config import load_config, save_config, CONFIG_DIR
 from avocado.status import get_macos_status
 from avocado.weather import get_weather
 from avocado.calendar_clock import get_calendar_lines, get_clock_info
 from avocado.ui import render_dashboard, render_neofetch, clear_screen, get_theme, RESET, BOLD, DIM
+
+HISTORY_FILE = os.path.join(CONFIG_DIR, "history")
+COMMANDS = ["help", "status", "weather", "calendar", "neofetch", "settings", "theme", "clear", "quit", "exit"]
+
+def setup_readline():
+    """Configures readline for Up/Down arrow history navigation & tab completion."""
+    if not HAVE_READLINE:
+        return
+
+    # Load history
+    if os.path.exists(HISTORY_FILE):
+        try:
+            readline.read_history_file(HISTORY_FILE)
+        except Exception:
+            pass
+
+    # Save history on exit
+    import atexit
+    atexit.register(save_readline_history)
+
+    # Enable autocompletion
+    def completer(text, state):
+        options = [c for c in COMMANDS if c.startswith(text.lower())]
+        if state < len(options):
+            return options[state]
+        return None
+
+    readline.set_completer(completer)
+    if "libedit" in readline.__doc__ if readline.__doc__ else False:
+        readline.parse_and_bind("bind ^I rl_complete")
+    else:
+        readline.parse_and_bind("tab: complete")
+
+def save_readline_history():
+    if HAVE_READLINE:
+        try:
+            readline.set_history_length(100)
+            readline.write_history_file(HISTORY_FILE)
+        except Exception:
+            pass
 
 def run_settings_prompt(config):
     colors = get_theme(config.get("theme", "avocado"))
@@ -99,6 +146,9 @@ def main():
         print(render_dashboard(status, weather, config))
         return
 
+    # Setup Readline for Up/Down arrow history & Tab Completion
+    setup_readline()
+
     # Main Interactive Command Loop
     while True:
         clear_screen()
@@ -108,7 +158,9 @@ def main():
         p = colors["primary"]
         r = RESET
 
-        print(f"\nType {BOLD}'help'{r}, {BOLD}'weather [city]'{r}, {BOLD}'calendar'{r}, {BOLD}'status'{r}, {BOLD}'settings'{r}, or {BOLD}'quit'{r}.")
+        print(f"\nQuick Keys: {BOLD}[r]{r}efresh  {BOLD}[s]{r}ettings  {BOLD}[c]{r}alendar  {BOLD}[w]{r}eather  {BOLD}[n]{r}eofetch  {BOLD}[q]{r}uit")
+        print(f"{m if 'm' in locals() else DIM}Use UP/DOWN arrows for history | Tab to autocomplete commands{RESET}")
+
         try:
             cmd_str = input(f"\n{p}avocado > {r}").strip()
         except (KeyboardInterrupt, EOFError):
@@ -123,43 +175,46 @@ def main():
         cmd = parts[0].lower()
         sub_args = parts[1:]
 
-        if cmd in ["quit", "exit", "q"]:
+        # Single-key & Full Command Shortcuts
+        if cmd in ["q", "quit", "exit"]:
             print("Exiting Avocado Terminal App. Have a great day!")
             break
-        elif cmd == "help":
-            print("""
-Available Avocado Commands:
-  • neofetch           - Display Apple ASCII logo and hardware specs
-  • status             - Refresh and show expanded laptop system metrics
-  • weather [city]     - Search weather forecast for any city with ASCII art
-  • calendar           - Show monthly calendar and digital clock
-  • settings           - Open terminal settings configuration prompt
-  • theme [name]       - Change theme (avocado, matrix, dracula, ocean, amber)
-  • clear              - Clear screen
-  • quit / exit        - Exit Avocado application
-""")
-            input("\nPress Enter to return to dashboard...")
-        elif cmd in ["neofetch", "macfetch"]:
-            clear_screen()
-            print(render_neofetch(colors))
-            input("\nPress Enter to return to dashboard...")
-        elif cmd == "status":
+        elif cmd in ["r", "status", "refresh"]:
             status = get_macos_status()
-        elif cmd == "weather":
-            city = " ".join(sub_args) if sub_args else config.get("default_city", "auto")
-            weather = get_weather(city, config.get("temp_unit", "C"))
-        elif cmd == "calendar":
+        elif cmd in ["s", "settings"]:
+            run_settings_prompt(config)
+            config = load_config()
+            status = get_macos_status()
+            weather = get_weather(config.get("default_city", "auto"), config.get("temp_unit", "C"))
+        elif cmd in ["c", "calendar"]:
             clear_screen()
             clock = get_clock_info()
             print(f"Time: {clock['time']} | {clock['date']}\n")
             for line in get_calendar_lines():
                 print(line)
             input("\nPress Enter to return...")
-        elif cmd == "settings":
-            run_settings_prompt(config)
-            config = load_config()
-            status = get_macos_status()
-            weather = get_weather(config.get("default_city", "auto"), config.get("temp_unit", "C"))
+        elif cmd in ["w", "weather"]:
+            city = " ".join(sub_args) if sub_args else config.get("default_city", "auto")
+            weather = get_weather(city, config.get("temp_unit", "C"))
+        elif cmd in ["n", "neofetch", "macfetch"]:
+            clear_screen()
+            print(render_neofetch(colors))
+            input("\nPress Enter to return to dashboard...")
+        elif cmd in ["h", "help", "?"]:
+            print("""
+Available Avocado Navigation & Commands:
+  • Single Keys:  [r]efresh  [s]ettings  [c]alendar  [w]eather  [n]eofetch  [q]uit
+  • Arrows:       UP / DOWN arrows cycle through typed command history
+  • Tab:          Tab autocompletes command names
+  • Full Commands:
+      status             - Refresh laptop telemetry
+      weather [city]     - Search weather for any city
+      calendar           - Show monthly calendar grid
+      settings           - Open preferences editor
+      theme [name]       - Change theme (avocado, matrix, dracula, ocean, amber)
+      clear              - Clear terminal screen
+""")
+            input("\nPress Enter to return to dashboard...")
         elif cmd == "theme":
             if sub_args and sub_args[0].lower() in ['avocado', 'matrix', 'dracula', 'ocean', 'amber']:
                 config['theme'] = sub_args[0].lower()
@@ -169,7 +224,7 @@ Available Avocado Commands:
         elif cmd == "clear":
             clear_screen()
         else:
-            print(f"Unknown command: {cmd}. Type 'help' for available commands.")
+            print(f"Unknown command: {cmd}. Type 'h' or 'help' for shortcuts.")
             time.sleep(1)
 
 if __name__ == "__main__":
