@@ -1,129 +1,70 @@
-#  macOS Terminal Dashboard & Landing Page
+# 🥑 Avocado: Native macOS Terminal Dashboard & CLI App
 
-> An authentic macOS terminal-themed dashboard and browser landing page displaying live laptop hardware metrics, real-time weather, tech news, digital clock, favorite app launcher dock, and an interactive `zsh` command line prompt.
+> A pure native macOS terminal dashboard application (CLI & TUI) that runs directly inside macOS Terminal, iTerm2, Kitty, Alacritty, or zsh/bash. **Zero web servers, zero browsers, zero third-party dependencies required!**
 
 ---
 
 ## 🌟 Key Features
 
-1. **Native macOS System Hardware Monitoring**:
-   - Queries official macOS shell APIs (`pmset`, `sysctl`, `vm_stat`, `df`, `sw_vers`).
-   - Displays real-time **CPU usage %**, **Apple Silicon / Intel model**, **Memory RAM usage**, **APFS Disk storage**, **Battery % (AC / Battery state)**, and **System Uptime**.
+1. **💻 Native macOS System Hardware Telemetry**:
+   - Queries official macOS shell APIs (`sysctl`, `pmset`, `vm_stat`, `df`, `sw_vers`).
+   - Displays real-time **CPU load %**, **Apple Silicon / Intel model**, **Memory RAM usage**, **APFS Disk storage**, **Battery % (AC / Battery state)**, and **System Uptime**.
 
-2. **Full Settings & Preferences Panel (`Cmd+,`)**:
-   - **Font Customization**: Choose between `JetBrains Mono`, `Fira Code`, `Share Tech Mono` (Retro), `SF Mono` (macOS native), or `Courier New`.
-   - **Font Size & Scale**: Slider adjustments from 11px to 22px.
-   - **Terminal Opacity & Blur**: Glassmorphic blur slider (50% to 100%).
-   - **Theme Palettes**: Switch between *macOS Pro Dark*, *Homebrew Matrix Green*, *Dracula Cyber*, *Ocean Blue*, and *Retro Amber*.
-   - **Audio & Mechanical Keypress Sound FX**: Synthesized retro keypress audio feedback with volume controls.
-   - **Weather Units**: Toggle between Fahrenheit (°F) and Celsius (°C).
+2. **🌦 Terminal Weather Forecast**:
+   - Live weather via Open-Meteo API formatted directly into terminal text.
+   - Shows current temperature (°F / °C), condition icon, wind speed, and multi-day forecast.
 
-3. **Live Weather Widget**:
-   - Powered by Open-Meteo API (free, open, no API key required).
-   - Global city search & 5-day weather forecasts with weather condition icons.
+3. **📰 Hacker News Reader**:
+   - Top 5 Hacker News headlines with points scores right inside the terminal layout.
 
-4. **Tech & World News Aggregator**:
-   - Hacker News top stories feed & tech headlines.
-   - Live search filter & direct article links.
+4. **🚀 App Switcher & Favorite Launchers**:
+   - Launch favorite apps/web links (`open 1` or `open github`).
 
-5. **Favorite App Switcher & Dock Launcher**:
-   - Quick launch cards for GitHub, VS Code, ChatGPT, YouTube, Spotify, Gmail, X, Figma, Notion.
-   - Keyboard shortcuts (`1`–`9`) to launch any app instantly.
-   - Custom app editor modal to add/remove your own web & app shortcuts.
+5. **⚙️ Terminal Settings & Config**:
+   - Configure ANSI color themes (*Avocado Green*, *Matrix*, *Dracula*, *Ocean*, *Amber*), temperature units, default city, and app shortcuts saved natively in `~/.config/avocado/config.json`.
 
-6. **Interactive `zsh` CLI Prompt & Commands**:
-   - Command prompt: `user@macbook-pro ~ %`
-   - Commands: `help`, `neofetch`, `status`, `weather [city]`, `news [category]`, `apps`, `open [app]`, `settings`, `theme`, `crt`, `matrix`, `clear`.
-   - Matrix digital rain screensaver (`matrix` command).
+6. **🥑 Interactive CLI Console**:
+   - Prompt `avocado >` with support for commands: `neofetch`, `status`, `weather [city]`, `news`, `apps`, `open [app]`, `settings`, `theme`, `clear`, `help`, `quit`.
 
 ---
 
 ## 📦 Homebrew Installation
 
-### Via Homebrew (Tap & Install)
-
 ```bash
-# Tap the repository formula
-brew tap RnR-io/mac-terminal-app
+# Tap the repository
+brew tap RnR-io/avocado
 
-# Install mac-terminal-dashboard
-brew install mac-terminal-dashboard
+# Install avocado
+brew install avocado
 
-# Run the launcher CLI
-mac-terminal-dashboard
+# Launch Avocado terminal app
+avocado
 ```
 
 ---
 
 ## 🚀 Quick Start (Local Setup)
 
-### Option 1: Direct Script Launch (Zero Dependencies)
-
 ```bash
-# Clone repository
-git clone https://github.com/RnR-io/mac-terminal-app.git
+# Clone the repository
+git clone https://github.com/RnR-io/avocado.git
 cd "mac terminal app"
 
-# Run executable launcher
-./bin/mac-terminal-app
+# Run the executable terminal binary
+./bin/avocado
 ```
 
-The launcher will start the Python native system backend on `http://127.0.0.1:8765` and open your default browser.
-
-### Option 2: Using NPM
-
-```bash
-npm start
-```
-
----
-
-## ⚙️ Interactive Terminal Commands
-
-Inside the terminal command line prompt (`user@macbook-pro ~ %`):
+### CLI Command Options
 
 | Command | Description |
 | :--- | :--- |
-| `help` | Display all available CLI commands |
-| `neofetch` / `macfetch` | Render Apple ASCII logo with hardware specifications |
-| `status` | Refresh and display laptop hardware metrics |
-| `weather [city]` | Search and view weather forecast for any city |
-| `news [category]` | Load latest headlines (`tech`, `hn`, `dev`) |
-| `apps` | List all installed favorite app shortcuts |
-| `open [app\|number]` | Launch favorite app by name or key index (`open 1` or `open github`) |
-| `settings` | Open Settings & Preferences modal |
-| `theme` | Cycle through terminal color themes |
-| `crt` | Toggle CRT retro scanline effect |
-| `matrix` | Launch full-screen Matrix rain animation |
-| `clear` | Clear terminal console buffer |
-
----
-
-## 🛠 Project Structure
-
-```
-.
-├── Formula/
-│   └── mac-terminal-dashboard.rb   # Homebrew Formula
-├── bin/
-│   └── mac-terminal-app            # Executable launcher binary
-├── js/
-│   ├── app.js                      # Core app initialization & timers
-│   ├── audio.js                    # Web Audio mechanical key click synthesizer
-│   ├── appswitcher.js              # Favorite app switcher dock & shortcut manager
-│   ├── news.js                     # News aggregator feed
-│   ├── settings.js                 # Settings & Preferences modal manager
-│   ├── status.js                   # Hardware status (Native API + Web fallback)
-│   ├── terminal.js                 # Interactive zsh CLI prompt & interpreter
-│   ├── themes.js                   # Theme palettes & CRT scanline effects
-│   └── weather.js                  # Open-Meteo weather API integration
-├── index.html                      # Terminal dashboard HTML structure
-├── index.css                       # macOS styling, glassmorphism & themes
-├── server.py                       # Native macOS system API backend server
-├── package.json                    # Package metadata & script targets
-├── .gitignore                      # Git ignored files
-└── README.md                       # Project documentation
-```
+| `./bin/avocado` | Launch interactive terminal dashboard |
+| `./bin/avocado --once` | Print dashboard layout once and exit |
+| `./bin/avocado --status` | Print laptop hardware status summary |
+| `./bin/avocado --neofetch` | Display Apple ASCII logo and hardware specs |
+| `./bin/avocado --weather "Tokyo"` | Get weather forecast for any city |
+| `./bin/avocado --news` | Fetch latest Hacker News headlines |
+| `./bin/avocado --settings` | Open interactive settings editor |
 
 ---
 
