@@ -1,6 +1,6 @@
 """
 Avocado Configuration Manager
-Persists user settings in ~/.config/avocado/config.json
+Persists user settings in ~/.config/avocado/config.json with strict file permissions (0700/0600).
 """
 import os
 import json
@@ -9,31 +9,33 @@ CONFIG_DIR = os.path.expanduser("~/.config/avocado")
 CONFIG_FILE = os.path.join(CONFIG_DIR, "config.json")
 
 DEFAULT_CONFIG = {
-    "theme": "avocado", # avocado, matrix, dracula, ocean, amber, monokai
+    "theme": "avocado",
     "temp_unit": "F",
     "default_city": "San Francisco",
     "refresh_rate": 2,
-    "news_category": "tech",
     "favorite_apps": [
-        {"name": "GitHub", "url": "https://github.com", "icon": "🐙"},
-        {"name": "VS Code", "url": "https://vscode.dev", "icon": "💻"},
-        {"name": "ChatGPT", "url": "https://chatgpt.com", "icon": "🤖"},
-        {"name": "YouTube", "url": "https://youtube.com", "icon": "▶️"},
-        {"name": "Spotify", "url": "https://open.spotify.com", "icon": "🎵"},
-        {"name": "Gmail", "url": "https://mail.google.com", "icon": "✉️"},
-        {"name": "X / Twitter", "url": "https://x.com", "icon": "🐦"},
-        {"name": "Figma", "url": "https://figma.com", "icon": "🎨"},
-        {"name": "Notion", "url": "https://notion.so", "icon": "📝"}
+        {"name": "Safari", "url": "Safari"},
+        {"name": "Google Chrome", "url": "Google Chrome"},
+        {"name": "ChatGPT", "url": "ChatGPT"},
+        {"name": "Terminal", "url": "Terminal"},
+        {"name": "Notes", "url": "Notes"}
     ]
 }
 
-def load_config():
+def ensure_secure_dir():
     if not os.path.exists(CONFIG_DIR):
         try:
-            os.makedirs(CONFIG_DIR, exist_ok=True)
+            os.makedirs(CONFIG_DIR, mode=0o700, exist_ok=True)
+        except Exception:
+            pass
+    else:
+        try:
+            os.chmod(CONFIG_DIR, 0o700)
         except Exception:
             pass
 
+def load_config():
+    ensure_secure_dir()
     if os.path.exists(CONFIG_FILE):
         try:
             with open(CONFIG_FILE, "r", encoding="utf-8") as f:
@@ -47,8 +49,9 @@ def load_config():
 
 def save_config(config):
     try:
-        os.makedirs(CONFIG_DIR, exist_ok=True)
+        ensure_secure_dir()
         with open(CONFIG_FILE, "w", encoding="utf-8") as f:
             json.dump(config, f, indent=2)
+        os.chmod(CONFIG_FILE, 0o600)
     except Exception as e:
         print(f"Error saving config: {e}")

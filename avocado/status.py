@@ -1,43 +1,48 @@
 """
 Native macOS System Hardware Telemetry Collector
-Queries sysctl, pmset, vm_stat, df, sw_vers, and top.
+Hardened against subprocess shell injection (uses shell=False with argument vectors).
 """
 import subprocess
 import re
 
-def run_cmd(cmd):
+def run_cmd_args(cmd_list, timeout=3):
+    """Executes system commands securely with shell=False."""
     try:
-        res = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT, timeout=3)
+        res = subprocess.check_output(cmd_list, stderr=subprocess.DEVNULL, timeout=timeout)
         return res.decode('utf-8', errors='ignore').strip()
     except Exception:
         return ""
 
 def get_macos_status():
-    # 1. Model & OS
-    model = run_cmd("sysctl -n hw.model") or "Mac (Apple Silicon)"
-    os_ver = run_cmd("sw_vers -productVersion") or "macOS"
-    os_name = run_cmd("sw_vers -productName") or "macOS"
-    
-    # 2. CPU
-    ncpu = run_cmd("sysctl -n hw.ncpu") or "8"
-    cpu_brand = run_cmd("sysctl -n machdep.cpu.brand_string")
+    # 1. Model & OS (shell=False)
+    model = run_cmd_args(["sysctl", "-n", "hw.model"]) or "Mac (Apple Silicon)"
+    os_ver = run_cmd_args(["sw_vers", "-productVersion"]) or "macOS"
+    os_name = run_cmd_args(["sw_vers", "-productName"]) or "macOS"
+
+    # 2. CPU info
+    ncpu = run_cmd_args(["sysctl", "-n", "hw.ncpu"]) or "8"
+    cpu_brand = run_cmd_args(["sysctl", "-n", "machdep.cpu.brand_string"])
     if not cpu_brand:
         cpu_brand = f"Apple Silicon ({ncpu} Cores)"
 
-    top_out = run_cmd("top -l 1 -n 0 | grep 'CPU usage'")
-    cpu_usage = 14.5
+    # Top output for CPU usage
+    top_out = run_cmd_args(["top", "-l", "1", "-n", "0"])
+    cpu_usage = 12.5
     if top_out:
-        m = re.search(r'(\d+\.\d+)%\s+user,\s+(\d+\.\d+)%\s+sys', top_out)
-        if m:
-            cpu_usage = round(float(m.group(1)) + float(m.group(2)), 1)
+        for line in top_out.splitlines():
+            if "CPU usage" in line:
+                m = re.search(r'(\d+\.\d+)%\s+user,\s+(\d+\.\d+)%\s+sys', line)
+                if m:
+                    cpu_usage = round(float(m.group(1)) + float(m.group(2)), 1)
+                break
 
     # 3. Memory
-    mem_size_bytes = run_cmd("sysctl -n hw.memsize")
+    mem_size_bytes = run_cmd_args(["sysctl", "-n", "hw.memsize"])
     total_ram_gb = 16.0
     if mem_size_bytes.isdigit():
         total_ram_gb = round(int(mem_size_bytes) / (1024**3), 1)
 
-    vm_stat_out = run_cmd("vm_stat")
+    vm_stat_out = run_cmd_args(["vm_stat"])
     used_ram_gb = round(total_ram_gb * 0.45, 1)
     if vm_stat_out:
         pages_free = re.search(r'Pages free:\s+(\d+)\.', vm_stat_out)
@@ -51,7 +56,7 @@ def get_macos_status():
     ram_pct = round((used_ram_gb / total_ram_gb) * 100, 1) if total_ram_gb else 45.0
 
     # 4. Battery
-    batt_out = run_cmd("pmset -g batt")
+    batt_out = run_cmd_args(["pmset", "-g", "batt"])
     batt_pct = 98
     is_charging = False
     power_source = "AC Adapter"
@@ -70,13 +75,13 @@ def get_macos_status():
             rem_time = m_rem.group(1) + " rem"
 
     # 5. Storage
-    df_out = run_cmd("df -h /")
+    df_out = run_cmd_args(["df", "-h", "/"])
     disk_total = "500Gi"
     disk_used = "200Gi"
     disk_avail = "300Gi"
     disk_pct = 40
     if df_out:
-        lines = df_out.split('\n')
+        lines = df_out.splitlines()
         if len(lines) > 1:
             parts = re.split(r'\s+', lines[1])
             if len(parts) >= 5:
@@ -86,7 +91,7 @@ def get_macos_status():
                 disk_pct = int(parts[4].replace('%', '')) if parts[4].replace('%', '').isdigit() else 40
 
     # 6. Uptime
-    uptime_str = run_cmd("uptime") or "up 2 hours"
+    uptime_str = run_cmd_args(["uptime"]) or "up 2 hours"
     m_up = re.search(r'up\s+([^,]+)', uptime_str)
     uptime_formatted = m_up.group(1) if m_up else "2 hours"
 

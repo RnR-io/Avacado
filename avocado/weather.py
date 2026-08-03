@@ -1,9 +1,11 @@
 """
 Terminal Weather Fetcher & ASCII Art Formatter (Open-Meteo API)
+Hardened against SSRF and arbitrary URL schemes.
 """
 import urllib.request
 import urllib.parse
 import json
+import re
 
 ASCII_WEATHER_ART = {
     "clear": [
@@ -44,6 +46,24 @@ ASCII_WEATHER_ART = {
     ]
 }
 
+def sanitize_city(city_name):
+    if not city_name or not isinstance(city_name, str):
+        return "San Francisco"
+    # Keep alphanumeric, spaces, commas, hyphens
+    cleaned = re.sub(r'[^a-zA-Z0-9\s,\.-]', '', city_name).strip()
+    return cleaned if cleaned else "San Francisco"
+
+def safe_http_get(url_str, timeout=4):
+    """Executes HTTP GET only over strict HTTPS protocol."""
+    if not url_str.startswith("https://"):
+        raise ValueError("Only HTTPS URLs allowed")
+    req = urllib.request.Request(
+        url_str,
+        headers={"User-Agent": "AvocadoTerminalApp/1.0"}
+    )
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        return json.loads(resp.read().decode('utf-8'))
+
 def get_weather_art_key(code):
     if code == 0: return "clear"
     if code in (1, 2, 3): return "cloudy"
@@ -65,13 +85,13 @@ def get_weather_desc(code):
     return "Moderate"
 
 def get_weather(city_name="San Francisco", temp_unit="F"):
+    clean_city = sanitize_city(city_name)
     try:
-        geo_url = f"https://geocoding-api.open-meteo.com/v1/search?name={urllib.parse.quote(city_name)}&count=1&language=en&format=json"
-        req = urllib.request.urlopen(geo_url, timeout=3)
-        geo_data = json.loads(req.read().decode('utf-8'))
+        geo_url = f"https://geocoding-api.open-meteo.com/v1/search?name={urllib.parse.quote(clean_city)}&count=1&language=en&format=json"
+        geo_data = safe_http_get(geo_url)
 
         if not geo_data.get("results"):
-            return _default_weather(city_name, temp_unit)
+            return _default_weather(clean_city, temp_unit)
 
         loc = geo_data["results"][0]
         lat, lon = loc["latitude"], loc["longitude"]
@@ -81,8 +101,7 @@ def get_weather(city_name="San Francisco", temp_unit="F"):
         unit_param = "&temperature_unit=fahrenheit" if is_f else ""
         w_url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current_weather=true&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=auto{unit_param}"
 
-        w_req = urllib.request.urlopen(w_url, timeout=3)
-        w_data = json.loads(w_req.read().decode('utf-8'))
+        w_data = safe_http_get(w_url)
         cur = w_data.get("current_weather", {})
         code = cur.get("weathercode", 0)
 
@@ -94,7 +113,6 @@ def get_weather(city_name="San Francisco", temp_unit="F"):
             times = daily.get("time", [])
             maxs = daily.get("temperature_2m_max", [])
             mins = daily.get("temperature_2m_min", [])
-            codes = daily.get("weathercode", [])
 
             for i in range(min(4, len(times))):
                 forecast_list.append({
@@ -114,7 +132,7 @@ def get_weather(city_name="San Francisco", temp_unit="F"):
             "forecast": forecast_list
         }
     except Exception:
-        return _default_weather(city_name, temp_unit)
+        return _default_weather(clean_city, temp_unit)
 
 def _default_weather(city_name, temp_unit):
     unit_str = "°F" if temp_unit.upper() == 'F' else "°C"

@@ -1,15 +1,26 @@
 """
 Installed macOS Native Applications Scanner & Launcher
-Scans /Applications and /System/Applications for installed macOS apps.
+Hardened against input sanitization & argument injection attacks.
 """
 import os
 import subprocess
+import re
 
 DEFAULT_MAC_APPS = [
     "Safari", "Google Chrome", "ChatGPT", "WhatsApp", 
     "Terminal", "Calendar", "Notes", "Calculator", 
     "System Settings", "Music", "Preview"
 ]
+
+def sanitize_app_name(name):
+    """Sanitizes application name input to prevent argument/flag injection."""
+    if not name or not isinstance(name, str):
+        return ""
+    # Strip dangerous shell characters & leading hyphens (which could trigger flag injection)
+    sanitized = re.sub(r'[;&|`$><]', '', name).strip()
+    while sanitized.startswith('-'):
+        sanitized = sanitized[1:].strip()
+    return sanitized
 
 def get_installed_mac_apps():
     found_apps = []
@@ -32,7 +43,6 @@ def get_installed_mac_apps():
             except Exception:
                 continue
 
-    # Filter to select top popular installed apps if available
     priority_order = [
         "Safari", "Google Chrome", "ChatGPT", "WhatsApp", "Visual Studio Code",
         "Terminal", "Calendar", "Notes", "Calculator", "System Settings",
@@ -44,7 +54,6 @@ def get_installed_mac_apps():
         if prio in found_apps:
             selected.append(prio)
 
-    # Add remaining installed apps up to 10
     for app in found_apps:
         if app not in selected and len(selected) < 12:
             selected.append(app)
@@ -64,23 +73,31 @@ def launch_mac_app(app_name_or_idx, installed_apps):
             app_name = installed_apps[idx]
             return _exec_open_app(app_name)
 
-    # Check by name matching
-    target_lower = target.lower()
+    # Check by name matching in installed list
+    target_clean = sanitize_app_name(target)
+    if not target_clean:
+        return False, "Invalid app name provided."
+
+    target_lower = target_clean.lower()
     for app_name in installed_apps:
         if target_lower in app_name.lower():
             return _exec_open_app(app_name)
 
-    # Try launching directly as macOS App Name
-    return _exec_open_app(target)
+    return _exec_open_app(target_clean)
 
 def _exec_open_app(app_name):
+    clean_name = sanitize_app_name(app_name)
+    if not clean_name:
+        return False, "Invalid app name."
+
     try:
-        res = subprocess.run(["open", "-a", app_name], capture_output=True, text=True)
+        # Use '--' to prevent flag injection (e.g. open -a -- "AppName")
+        res = subprocess.run(["open", "-a", "--", clean_name], capture_output=True, text=True, timeout=5)
         if res.returncode == 0:
-            return True, f"🚀 Launched native macOS app: [{app_name}]"
+            return True, f"🚀 Launched native macOS app: [{clean_name}]"
         else:
-            # Try general open
-            subprocess.Popen(["open", app_name], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            return True, f"Opening [{app_name}]..."
+            # Fallback to standard open with double hyphens
+            subprocess.Popen(["open", "--", clean_name], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            return True, f"Opening [{clean_name}]..."
     except Exception as e:
-        return False, f"Failed to launch app '{app_name}': {e}"
+        return False, f"Failed to launch app '{clean_name}': {e}"
