@@ -18,48 +18,49 @@
 3. **📅 Monthly Calendar & System Time**:
    - Terminal monthly calendar grid highlighting today's date, current time, date, and week number.
 
-4. **⚙️ Terminal Settings & Config**:
+4. **⚡ Seamless Keyboard Navigation**:
+   - **Up/Down Arrow History**: Cycle through all typed commands (`readline`).
+   - **Tab Autocompletion**: Autocomplete command names.
+   - **Single-Key Shortcuts**: Quick keys `[r]`efresh, `[s]`ettings, `[c]`alendar, `[w]`eather, `[n]`eofetch, `[q]`uit.
+
+5. **⚙️ Terminal Settings & Config**:
    - Configure ANSI color themes (*Avocado Green*, *Matrix*, *Dracula*, *Ocean*, *Amber*), temperature units (°C / °F), and location saved securely in `~/.config/avocado/config.json`.
 
 ---
 
 ## 📦 Homebrew Installation
 
+Install globally on any Mac using Homebrew:
+
 ```bash
 # 1. Tap the repository
 brew tap RnR-io/Avacado https://github.com/RnR-io/Avacado.git
 
-# 2. Install avocado
+# 2. Trust tap (if prompted by Homebrew)
+brew trust rnr-io/avacado
+
+# 3. Install avocado
 brew install avocado
 
-# 3. Launch from any terminal prompt!
+# 4. Run anywhere!
 avocado
 ```
 
 ---
 
-## 🚀 Quick Start (Local Setup)
+## 🚀 Terminal Commands & Usage
 
-```bash
-# Clone the repository
-git clone https://github.com/RnR-io/Avacado.git
-cd Avacado
-
-# Run the executable terminal binary
-./bin/avocado
-```
-
-### CLI Command Options
+Once installed globally, run `avocado` from any terminal prompt:
 
 | Command | Description |
 | :--- | :--- |
-| `./bin/avocado` | Launch interactive terminal dashboard |
-| `./bin/avocado --once` | Print dashboard layout once and exit |
-| `./bin/avocado --status` | Print expanded hardware telemetry summary |
-| `./bin/avocado --neofetch` | Display Apple ASCII logo and hardware specs |
-| `./bin/avocado --weather "Tokyo"` | Get weather forecast for any city |
-| `./bin/avocado --calendar` | Display monthly calendar and system time |
-| `./bin/avocado --settings` | Open interactive settings editor |
+| `avocado` | Launch interactive terminal dashboard |
+| `avocado --once` | Print dashboard layout once and exit |
+| `avocado --status` | Print expanded hardware telemetry summary |
+| `avocado --neofetch` | Display Apple ASCII logo and hardware specs |
+| `avocado --weather "Tokyo"` | Get weather forecast for any city |
+| `avocado --calendar` | Display monthly calendar grid and system time |
+| `avocado --settings` | Open interactive settings editor |
 
 ---
 
