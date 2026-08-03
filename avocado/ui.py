@@ -1,8 +1,9 @@
 """
-Terminal UI Utilities (ANSI Colors & Box-Drawing Grid)
+Terminal UI Utilities (ANSI Colors & Box-Drawing Grid Layout)
 """
 import os
 import sys
+from avocado.calendar_clock import get_calendar_lines, get_clock_info
 
 # ANSI Color Codes
 RESET = "\033[0m"
@@ -60,7 +61,7 @@ def get_theme(theme_name="avocado"):
 def clear_screen():
     print("\033[H\033[2J\033[3J", end="")
 
-def make_progress_bar(pct, length=18, fill_char="█", empty_char="░"):
+def make_progress_bar(pct, length=16, fill_char="█", empty_char="░"):
     filled = int(round(length * (pct / 100.0)))
     return fill_char * filled + empty_char * (length - filled)
 
@@ -86,7 +87,7 @@ def render_neofetch(colors):
 """
     return art
 
-def render_dashboard(status, weather, news, config):
+def render_dashboard(status, weather, mac_apps, config):
     colors = get_theme(config.get("theme", "avocado"))
     p = colors["primary"]
     a = colors["accent"]
@@ -96,26 +97,24 @@ def render_dashboard(status, weather, news, config):
     b = colors["border"]
     r = RESET
 
-    # Calculate terminal dimensions
     try:
         cols, rows = os.get_terminal_size()
     except Exception:
-        cols, rows = 80, 24
+        cols, rows = 85, 26
 
-    w = max(78, min(cols - 2, 110))
-
+    w = max(82, min(cols - 2, 110))
     lines = []
-    
-    # Header box
+
+    # 1. Outer Header Box
     lines.append(f"{b}┌{'─' * (w - 2)}┐{r}")
     title_str = f" 🥑 AVOCADO MAC OS TERMINAL DASHBOARD "
     lines.append(f"{b}│{r} {BOLD}{p}{title_str}{r}{' ' * (w - 4 - len(title_str))}{b}│{r}")
     lines.append(f"{b}├{'─' * (w - 2)}┤{r}")
 
-    # Section 1: Laptop Hardware Status
+    # 2. Laptop Hardware Status Section
     lines.append(f"{b}│{r} {BOLD}{h}💻 LAPTOP HARDWARE STATUS{r} {m}({status['os']}){r}{' ' * (w - 32 - len(status['os']))}{b}│{r}")
     lines.append(f"{b}│{r}  {t}Model:{r} {status['model']}  |  {t}CPU:{r} {status['cpu_brand']}")
-    
+
     cpu_bar = make_progress_bar(status['cpu_usage'], 14)
     ram_bar = make_progress_bar(status['ram_pct'], 14)
     disk_bar = make_progress_bar(status['disk_pct'], 14)
@@ -125,32 +124,52 @@ def render_dashboard(status, weather, news, config):
     lines.append(f"{b}│{r}  {t}Uptime:{r} {status['uptime']}")
     lines.append(f"{b}├{'─' * (w - 2)}┤{r}")
 
-    # Section 2: Weather & News Side-by-Side or Stacked
-    lines.append(f"{b}│{r} {BOLD}{h}🌦 LIVE WEATHER{r} {m}({weather.get('city', 'San Francisco')}){r}{' ' * (w - 26 - len(weather.get('city', 'San Francisco')))}{b}│{r}")
-    lines.append(f"{b}│{r}  {weather.get('icon', '🌤')} {BOLD}{t}{weather.get('temp', '68°F')}{r} - {weather.get('desc', 'Partly Cloudy')}  |  Wind: {weather.get('wind', '8 km/h')}")
+    # 3. Weather & Calendar Section (Side-by-side)
+    lines.append(f"{b}│{r} {BOLD}{h}🌦 ASCII WEATHER FORECAST{r} {m}({weather.get('city', 'San Francisco')}){r}{' ' * (w - 32 - len(weather.get('city', 'San Francisco')))}{b}│{r}")
 
-    f_str = ""
-    for f in weather.get("forecast", []):
-        f_str += f"{f['day']}: {f['icon']}{f['high']}  "
-    if f_str:
-        lines.append(f"{b}│{r}  {t}Forecast:{r} {f_str}")
+    art_lines = weather.get("art", [""])
+    weather_info_header = f"Temp: {BOLD}{weather.get('temp', '68°F')}{r} ({weather.get('desc', 'Clear')}) | Wind: {weather.get('wind', '10 km/h')}"
+    
+    # Render ASCII weather art
+    for art_l in art_lines:
+        lines.append(f"{b}│{r}  {a}{art_l}{r}  |  {t}{weather_info_header}{r}")
+        weather_info_header = "" # print header on first line only
+
+    # Forecast summary
+    fc_str = "  Forecast: "
+    for fc in weather.get("forecast", []):
+        fc_str += f"{fc['day']}: {fc['high']}/{fc['low']}  "
+    lines.append(f"{b}│{r}  {t}{fc_str}{r}")
+
     lines.append(f"{b}├{'─' * (w - 2)}┤{r}")
 
-    # Section 3: Tech & World News
-    lines.append(f"{b}│{r} {BOLD}{h}📰 HACKER NEWS HEADLINES{r}{' ' * (w - 24)}{b}│{r}")
-    for idx, item in enumerate(news[:4]):
-        title = item['title']
-        if len(title) > w - 12:
-            title = title[:w - 15] + "..."
-        lines.append(f"{b}│{r}  {a}{idx+1}.{r} {t}{title}{r} {m}(▲{item.get('score', 0)}){r}")
+    # 4. Calendar & Time Section (Replaces News Headlines)
+    lines.append(f"{b}│{r} {BOLD}{h}📅 MONTHLY CALENDAR & SYSTEM TIME{r}{' ' * (w - 36)}{b}│{r}")
+    
+    cal_lines = get_calendar_lines()
+    clock_info = get_clock_info()
+
+    lines.append(f"{b}│{r}  {BOLD}{a}⏰ {clock_info['time']}{r}  |  {t}{clock_info['date']} ({clock_info['week']}){r}")
+    for cl in cal_lines[:6]:
+        lines.append(f"{b}│{r}  {t}{cl}{r}")
+
     lines.append(f"{b}├{'─' * (w - 2)}┤{r}")
 
-    # Section 4: Favorite App Launcher
-    lines.append(f"{b}│{r} {BOLD}{h}🚀 FAVORITE APPS LAUNCHER{r} {m}(Type 'open 1' or press key to launch){r}{' ' * (w - 63)}{b}│{r}")
-    dock_line = "  "
-    for idx, app in enumerate(config.get("favorite_apps", [])[:6]):
-        dock_line += f"[{a}{idx+1}{r}] {app.get('icon', '🌐')} {app['name']}   "
-    lines.append(f"{b}│{r}{dock_line}")
+    # 5. Native macOS Installed Applications Dock Section
+    lines.append(f"{b}│{r} {BOLD}{h}🚀 INSTALLED MAC OS APPS DOCK{r} {m}(Type 'open 1' or 'open Safari'){r}{' ' * (w - 58)}{b}│{r}")
+
+    dock_row1 = "  "
+    dock_row2 = "  "
+    for idx, app_name in enumerate(mac_apps[:10]):
+        badge = f"[{a}{idx+1}{r}] {app_name}"
+        if idx < 5:
+            dock_row1 += f"{badge}   "
+        else:
+            dock_row2 += f"{badge}   "
+
+    lines.append(f"{b}│{r}{dock_row1}")
+    if dock_row2.strip():
+        lines.append(f"{b}│{r}{dock_row2}")
 
     lines.append(f"{b}└{'─' * (w - 2)}┘{r}")
 

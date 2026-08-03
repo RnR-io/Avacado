@@ -1,41 +1,86 @@
 """
-Favorite Apps & Terminal Launcher
+Installed macOS Native Applications Scanner & Launcher
+Scans /Applications and /System/Applications for installed macOS apps.
 """
+import os
 import subprocess
-import webbrowser
 
-def open_app(app_target, apps_list):
-    if not app_target:
-        return False, "No target provided."
+DEFAULT_MAC_APPS = [
+    "Safari", "Google Chrome", "ChatGPT", "WhatsApp", 
+    "Terminal", "Calendar", "Notes", "Calculator", 
+    "System Settings", "Music", "Preview"
+]
 
-    target = str(app_target).strip().lower()
+def get_installed_mac_apps():
+    found_apps = []
+    dirs_to_scan = [
+        "/Applications",
+        "/System/Applications",
+        "/System/Applications/Utilities",
+        "/Applications/Utilities",
+        os.path.expanduser("~/Applications")
+    ]
 
-    # Check by number index
+    for d in dirs_to_scan:
+        if os.path.exists(d):
+            try:
+                for f in os.listdir(d):
+                    if f.endswith('.app') and not f.startswith('.'):
+                        app_name = f[:-4]
+                        if app_name not in found_apps:
+                            found_apps.append(app_name)
+            except Exception:
+                continue
+
+    # Filter to select top popular installed apps if available
+    priority_order = [
+        "Safari", "Google Chrome", "ChatGPT", "WhatsApp", "Visual Studio Code",
+        "Terminal", "Calendar", "Notes", "Calculator", "System Settings",
+        "Music", "Spotify", "Finder", "Preview", "Mail", "Messages"
+    ]
+
+    selected = []
+    for prio in priority_order:
+        if prio in found_apps:
+            selected.append(prio)
+
+    # Add remaining installed apps up to 10
+    for app in found_apps:
+        if app not in selected and len(selected) < 12:
+            selected.append(app)
+
+    return selected if selected else DEFAULT_MAC_APPS
+
+def launch_mac_app(app_name_or_idx, installed_apps):
+    if not app_name_or_idx:
+        return False, "No app specified."
+
+    target = str(app_name_or_idx).strip()
+
+    # Check by number index (1-based)
     if target.isdigit():
         idx = int(target) - 1
-        if 0 <= idx < len(apps_list):
-            app = apps_list[idx]
-            launch_url_or_app(app["url"])
-            return True, f"Launched [{app['name']}] -> {app['url']}"
+        if 0 <= idx < len(installed_apps):
+            app_name = installed_apps[idx]
+            return _exec_open_app(app_name)
 
-    # Check by name
-    for app in apps_list:
-        if target in app["name"].lower():
-            launch_url_or_app(app["url"])
-            return True, f"Launched [{app['name']}] -> {app['url']}"
+    # Check by name matching
+    target_lower = target.lower()
+    for app_name in installed_apps:
+        if target_lower in app_name.lower():
+            return _exec_open_app(app_name)
 
-    # Fallback to general open URL or search
-    if target.startswith("http://") or target.startswith("https://"):
-        launch_url_or_app(target)
-        return True, f"Opened {target}"
+    # Try launching directly as macOS App Name
+    return _exec_open_app(target)
 
-    return False, f"Shortcut for '{target}' not found."
-
-def launch_url_or_app(url_or_cmd):
+def _exec_open_app(app_name):
     try:
-        subprocess.Popen(["open", url_or_cmd], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    except Exception:
-        try:
-            webbrowser.open(url_or_cmd)
-        except Exception:
-            pass
+        res = subprocess.run(["open", "-a", app_name], capture_output=True, text=True)
+        if res.returncode == 0:
+            return True, f"🚀 Launched native macOS app: [{app_name}]"
+        else:
+            # Try general open
+            subprocess.Popen(["open", app_name], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            return True, f"Opening [{app_name}]..."
+    except Exception as e:
+        return False, f"Failed to launch app '{app_name}': {e}"
