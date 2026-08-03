@@ -1,15 +1,12 @@
 """
-Terminal UI Utilities (ANSI Colors & Theme-Adaptive Transparent Graphics Engine v1.8.0)
-Features:
-- Dynamic Theme Matching (Graphics tint to Avocado, Matrix, Dracula, Ocean, Amber themes)
-- Resilient Height & Width Scaling (Fits small terminal windows without hiding text)
-- Transparent background rendering
+Terminal UI Utilities (ANSI Colors & PNG TrueColor Image Graphics Engine v1.9.0)
+Renders high-definition PNG image graphics (assets/avocado_logo.png) in Neofetch & Dashboard.
 """
 import os
 import sys
 import re
 from avocado.calendar_clock import get_calendar_lines, get_clock_info
-from avocado.graphics import get_theme_colored_avocado
+from avocado.graphics import get_avocado_graphic
 
 # ANSI Color Codes
 RESET = "\033[0m"
@@ -92,8 +89,8 @@ def render_neofetch(colors, status=None):
         from avocado.status import get_macos_status
         status = get_macos_status()
 
-    # Get theme-adaptive transparent graphics
-    graphic_lines = get_theme_colored_avocado(colors, mode="normal")
+    # Get TrueColor PNG Image Matrix (assets/avocado_logo.png)
+    graphic_lines = get_avocado_graphic(width=22)
 
     cpu_bar = make_progress_bar(status['cpu_usage'], 10)
     ram_bar = make_progress_bar(status['ram_pct'], 10)
@@ -113,11 +110,11 @@ def render_neofetch(colors, status=None):
         f"{t}Uptime:{r}            {status['uptime']}"
     ]
 
-    out_lines = [f"\n{BOLD}{a}AVOCADO THEME-MATCHED ASCII HARDWARE SUMMARY{r}\n"]
+    out_lines = [f"\n{BOLD}{a}AVOCADO HIGH-DEFINITION PNG IMAGE GRAPHIC SUMMARY{r}\n"]
 
     max_rows = max(len(graphic_lines), len(sys_info))
     for i in range(max_rows):
-        art_l = graphic_lines[i] if i < len(graphic_lines) else " " * 36
+        art_l = graphic_lines[i] if i < len(graphic_lines) else " " * 22
         info_l = sys_info[i] if i < len(sys_info) else ""
         out_lines.append(f"  {art_l}   {info_l}")
 
@@ -141,7 +138,6 @@ def render_dashboard(status, weather, config):
     w = max(76, cols - 2)
     lines = []
 
-    # Dynamic Height Cap so small windows never hide content off bottom
     max_visible_rows = max(6, min(rows - 9, 14))
 
     # Single-Panel Stacked Layout for small/narrow windows (cols < 95)
@@ -174,7 +170,7 @@ def render_dashboard(status, weather, config):
     lines.append(f"{b}┌{'─' * (total_inner_w)}┐{r}")
     title_str = " [AVOCADO] MAC OS TERMINAL DASHBOARD & CONTROL CENTER "
     lines.append(f"{b}│{r} {a}.---.{r}  {BOLD}{p}{title_str}{r}{' ' * max(0, total_inner_w - 9 - len(title_str))}{b}│{r}")
-    lines.append(f"{b}│{r} {p}( (O) ){r} {m}Theme-Matched Transparent Graphics | Responsive Height/Width Grid{r}{' ' * max(0, total_inner_w - 71)}{b}│{r}")
+    lines.append(f"{b}│{r} {p}( (O) ){r} {m}TrueColor PNG Image Graphics | Responsive Height/Width Grid{r}{' ' * max(0, total_inner_w - 71)}{b}│{r}")
     lines.append(f"{b}├{'─' * col_w}┬{'─' * (col_w + 2)}┬{'─' * col_w}┤{r}")
 
     c1_h = truncate_and_pad(f"{BOLD}{h}💻 HARDWARE TELEMETRY{r}", col_w)
@@ -231,7 +227,6 @@ def render_dashboard(status, weather, config):
     for cl in cal_lines:
         col3.append(f"{t}{cl}{r}")
 
-    # Dynamically cap rows based on terminal window height
     display_rows = min(max_visible_rows, max(len(col1), len(col2), len(col3)))
 
     for idx in range(display_rows):
