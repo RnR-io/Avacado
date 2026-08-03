@@ -18,7 +18,7 @@ def run_settings_prompt(config):
     p = colors["primary"]
     r = RESET
 
-    print(f"\n{BOLD}⚙️  AVOCADO TERMINAL SETTINGS & PREFERENCES{r}")
+    print(f"\n{BOLD}[SETTING] AVOCADO TERMINAL SETTINGS & PREFERENCES{r}")
     print("--------------------------------------------------")
     print(f"1. Theme: {config.get('theme')} (avocado, matrix, dracula, ocean, amber)")
     print(f"2. Temperature Unit: {config.get('temp_unit')} (F, C)")
@@ -47,7 +47,7 @@ def run_settings_prompt(config):
             print(f"Default city updated to '{city_choice}'!")
 
 def main():
-    parser = argparse.ArgumentParser(description="🥑 Avocado: Native macOS Terminal Dashboard & CLI App")
+    parser = argparse.ArgumentParser(description="Avocado: Native macOS Terminal Dashboard & CLI App")
     parser.add_argument("--status", action="store_true", help="Print laptop hardware status and exit")
     parser.add_argument("--weather", type=str, help="Get weather forecast for a city")
     parser.add_argument("--calendar", action="store_true", help="Print monthly calendar and system time")
@@ -67,29 +67,29 @@ def main():
 
     if args.status:
         st = get_macos_status()
-        print(f"💻 Model: {st['model']} ({st['os']})")
-        print(f"🧠 CPU: {st['cpu_brand']} - Load: {st['cpu_usage']}%")
-        print(f"💾 RAM: {st['used_ram_gb']}GB / {st['total_ram_gb']}GB ({st['ram_pct']}%)")
-        print(f"🔋 Battery: {st['batt_pct']}% ({st['power_source']})")
-        print(f"⏱ Uptime: {st['uptime']}")
+        print(f"Model: {st['model']} ({st['os']})")
+        print(f"CPU: {st['cpu_brand']} - Load: {st['cpu_usage']}%")
+        print(f"RAM: {st['used_ram_gb']}GB / {st['total_ram_gb']}GB ({st['ram_pct']}%)")
+        print(f"Battery: {st['batt_pct']}% ({st['power_source']})")
+        print(f"Uptime: {st['uptime']}")
         return
 
     if args.weather:
         w = get_weather(args.weather, config.get("temp_unit", "F"))
-        print(f"🌦 Weather for {w['city']}: {w['temp']} - {w['desc']} (Wind: {w['wind']})")
+        print(f"Weather for {w['city']}: {w['temp']} - {w['desc']} (Wind: {w['wind']})")
         for line in w.get("art", []):
             print(line)
         return
 
     if args.calendar:
         clock = get_clock_info()
-        print(f"⏰ {clock['time']} | {clock['date']}")
+        print(f"Time: {clock['time']} | {clock['date']}")
         for line in get_calendar_lines():
             print(line)
         return
 
     if args.apps:
-        print("🚀 Installed Native macOS Applications:")
+        print("Installed Native macOS Applications:")
         for idx, app_name in enumerate(mac_apps):
             print(f" [{idx+1}] {app_name}")
         return
@@ -98,7 +98,6 @@ def main():
         run_settings_prompt(config)
         return
 
-    # Interactive Terminal Dashboard Mode
     status = get_macos_status()
     weather = get_weather(config.get("default_city", "San Francisco"), config.get("temp_unit", "F"))
 
@@ -117,9 +116,9 @@ def main():
 
         print(f"\nType {BOLD}'help'{r}, {BOLD}'weather [city]'{r}, {BOLD}'calendar'{r}, {BOLD}'open [1-10|app_name]'{r}, {BOLD}'settings'{r}, or {BOLD}'quit'{r}.")
         try:
-            cmd_str = input(f"\n{p}🥑 avocado > {r}").strip()
+            cmd_str = input(f"\n{p}avocado > {r}").strip()
         except (KeyboardInterrupt, EOFError):
-            print("\nExiting Avocado Terminal App. Goodbye! 🥑")
+            print("\nExiting Avocado Terminal App. Goodbye!")
             break
 
         if not cmd_str:
@@ -131,7 +130,7 @@ def main():
         sub_args = parts[1:]
 
         if cmd in ["quit", "exit", "q"]:
-            print("Exiting Avocado Terminal App. Have a great day! 🥑")
+            print("Exiting Avocado Terminal App. Have a great day!")
             break
         elif cmd == "help":
             print("""
@@ -160,7 +159,7 @@ Available Avocado Commands:
         elif cmd == "calendar":
             clear_screen()
             clock = get_clock_info()
-            print(f"⏰ {clock['time']} | {clock['date']}\n")
+            print(f"Time: {clock['time']} | {clock['date']}\n")
             for line in get_calendar_lines():
                 print(line)
             input("\nPress Enter to return...")

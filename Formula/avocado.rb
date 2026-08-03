@@ -1,5 +1,5 @@
 class Avocado < Formula
-  desc "🥑 Native macOS Terminal Dashboard & CLI App"
+  desc "Native macOS Terminal Dashboard & CLI App"
   homepage "https://github.com/RnR-io/Avacado"
   url "https://github.com/RnR-io/Avacado/archive/refs/tags/v1.0.0.tar.gz"
   sha256 "0000000000000000000000000000000000000000000000000000000000000000"
@@ -14,7 +14,7 @@ class Avocado < Formula
 
   def caveats
     <<~EOS
-      🥑 Avocado Native macOS Terminal App installed!
+      Avocado Native macOS Terminal App installed!
       
       To start the terminal dashboard, run:
         avocado
