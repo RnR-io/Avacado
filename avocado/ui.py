@@ -1,6 +1,6 @@
 """
-Terminal UI Utilities (ANSI Colors & High-Density CRT ASCII Art Render Engine)
-Features detailed high-definition CRT ASCII Avocado graphics, 3-column equal split layout, and high-density weather banners.
+Terminal UI Utilities (ANSI Colors & Detailed High-Density ASCII Art Render Engine)
+Renders a clean 3-Column Dashboard with detailed ASCII Avocado Art & clean calendar layout.
 """
 import os
 import sys
@@ -56,19 +56,33 @@ THEME_COLORS = {
     }
 }
 
-# Detailed High-Definition ASCII Avocado Art (from CRT image reference)
-HIGH_DEF_AVOCADO_NEOFETCH = [
-    "         .-------------.",
-    "       .'   .-------.   '.",
-    "      /   .'         '.   \\",
-    "     |   /   .-----.   \\   |",
-    "     |  |   /   #   \\   |  |",
-    "     |  |  |   ###   |  |  |",
-    "     |  |   \\   #   /   |  |",
-    "     |   \\   '-----'   /   |",
-    "      \\   '.         .'   /",
-    "       '.   '-------'   .'",
-    "         '-------------'",
+# Ultra Detailed High-Density ASCII Avocado Art
+DETAILED_AVOCADO_ART = [
+    "          .------------------.",
+    "        .'                    '.",
+    "       /     ..-------------..  \\",
+    "      |    .'   .---------.   '. |",
+    "      |   /   .'   .---.   '.   \\|",
+    "      |  |   /    /     \\    \\   |",
+    "      |  |  |    |   O   |    |  |",
+    "      |  |  |    |  (O)  |    |  |",
+    "      |  |   \\    \\     /    /   |",
+    "      |   \\   '.   '---'   .'   /",
+    "      |    '.   '---------'   .'",
+    "       \\     ''-------------''",
+    "        '.                    .'",
+    "          '------------------'"
+]
+
+# Compact Header ASCII Avocado Art
+COMPACT_AVOCADO_ART = [
+    "   .-----------.",
+    "  /  .-------.  \\",
+    " |  /  ( # )  \\  |",
+    " | |  ( ### )  | |",
+    " |  \\  ( # )  /  |",
+    "  \\  '-------'  /",
+    "   '-----------'"
 ]
 
 def get_theme(theme_name="avocado"):
@@ -115,11 +129,11 @@ def render_neofetch(colors, status=None):
         f"{t}Uptime:{r}            {status['uptime']}"
     ]
 
-    out_lines = [f"\n{BOLD}{a}AVOCADO HIGH-DEFINITION ASCII HARDWARE SYSTEM SUMMARY{r}\n"]
+    out_lines = [f"\n{BOLD}{a}AVOCADO ULTRA-DETAILED ASCII HARDWARE TELEMETRY SUMMARY{r}\n"]
 
-    max_rows = max(len(HIGH_DEF_AVOCADO_NEOFETCH), len(sys_info))
+    max_rows = max(len(DETAILED_AVOCADO_ART), len(sys_info))
     for i in range(max_rows):
-        art_l = HIGH_DEF_AVOCADO_NEOFETCH[i] if i < len(HIGH_DEF_AVOCADO_NEOFETCH) else " " * 27
+        art_l = DETAILED_AVOCADO_ART[i] if i < len(DETAILED_AVOCADO_ART) else " " * 36
         info_l = sys_info[i] if i < len(sys_info) else ""
         out_lines.append(f"  {a}{art_l}{r}   {info_l}")
 
@@ -146,14 +160,14 @@ def render_dashboard(status, weather, config):
 
     lines = []
 
-    # 1. Header Box with High-Def ASCII Avocado Pit Icon
+    # 1. Dashboard Header Box with Compact Detailed ASCII Avocado Icon
     lines.append(f"{b}┌{'─' * (total_inner_w)}┐{r}")
     title_str = " [AVOCADO] NATIVE MAC OS TERMINAL DASHBOARD & CONTROL CENTER "
     lines.append(f"{b}│{r} {a}.---.{r}  {BOLD}{p}{title_str}{r}{' ' * max(0, total_inner_w - 9 - len(title_str))}{b}│{r}")
-    lines.append(f"{b}│{r} {p}( (O) ){r} {m}GuacMode Enabled | High-Density Telemetry & Arrow-Key TUI Controls{r}{' ' * max(0, total_inner_w - 68)}{b}│{r}")
+    lines.append(f"{b}│{r} {p}( (O) ){r} {m}GuacMode Enabled | High-Density Hardware Telemetry & Control Center{r}{' ' * max(0, total_inner_w - 71)}{b}│{r}")
     lines.append(f"{b}├{'─' * col_w}┬{'─' * (col_w + 2)}┬{'─' * col_w}┤{r}")
 
-    # Column Headers (1/3 Hardware, 1/3 Weather, 1/3 Calendar & Time)
+    # Column Headers (1/3 Hardware, 1/3 Weather, 1/3 Calendar & 12H Time)
     c1_h = pad_str(f"{BOLD}{h}💻 HARDWARE TELEMETRY{r}", col_w)
     c2_h = pad_str(f"{BOLD}{h}🌦 ASCII WEATHER{r}", col_w + 2)
     c3_h = pad_str(f"{BOLD}{h}📅 CALENDAR & 12H TIME{r}", col_w)
@@ -161,11 +175,12 @@ def render_dashboard(status, weather, config):
     lines.append(f"{b}│{r} {c1_h} {b}│{r} {c2_h} {b}│{r} {c3_h} {b}│{r}")
     lines.append(f"{b}├{'─' * col_w}┼{'─' * (col_w + 2)}┼{'─' * col_w}┤{r}")
 
-    # 2. Build Column Content Lists
+    # 2. Build 3 Column Content Lists
     cpu_bar = make_progress_bar(status['cpu_usage'], 10)
     ram_bar = make_progress_bar(status['ram_pct'], 10)
     disk_bar = make_progress_bar(status['disk_pct'], 10)
 
+    # Column 1: Hardware Telemetry
     col1 = [
         f"{t}Model:{r} {status['model']}",
         f"{t}OS:{r} {status['os']}",
@@ -182,6 +197,7 @@ def render_dashboard(status, weather, config):
         f"{t}Uptime:{r} {status['uptime']}"
     ]
 
+    # Column 2: ASCII Weather
     art_lines = weather.get("art", [""])
     col2 = [
         f"{BOLD}{a}{weather.get('city', 'Location')}{r}",
@@ -197,20 +213,18 @@ def render_dashboard(status, weather, config):
     for fc in weather.get("forecast", [])[:3]:
         col2.append(f" • {fc['day']}: {fc['high']} / {fc['low']}")
 
+    # Column 3: Calendar & 12-Hour System Time (Clean - Art Removed Above Calendar)
     clock_info = get_clock_info()
     cal_lines = get_calendar_lines()
-    banner = clock_info["large_banner"]
 
     col3 = [
         f"{BOLD}{a}TIME: {clock_info['time']}{r}",
         f"{t}{clock_info['date']}{r}",
+        f"{m}{clock_info['week']}{r}",
         ""
     ]
-    for b_l in banner:
-        col3.append(f"{a}{b_l}{r}")
-
-    col3.append("")
-    for cl in cal_lines[:6]:
+    # Add calendar lines directly (NO ASCII art numbers above calendar!)
+    for cl in cal_lines:
         col3.append(f"{t}{cl}{r}")
 
     max_rows = max(len(col1), len(col2), len(col3))

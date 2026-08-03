@@ -1,45 +1,9 @@
 """
-Terminal Monthly Calendar & 12-Hour Digital Clock Widget
-Renders a clean terminal month grid highlighting today's date + 12-Hour large digital clock.
+Terminal Monthly Calendar & 12-Hour System Time Widget
+Renders a clean terminal month grid highlighting today's date + 12-Hour digital clock string.
 """
 import calendar
 import datetime
-import time
-
-DIGITS_12H = {
-    '0': [" ┌─┐ ", " │ │ ", " └─┘ "],
-    '1': ["  ┌┐ ", "   │ ", "  ─┴─"],
-    '2': [" ┌─┐ ", " ┌─┘ ", " └───"],
-    '3': [" ┌─┐ ", "  ─┤ ", " └─┘ "],
-    '4': [" ┐ ┌ ", " └─┤ ", "   ┴ "],
-    '5': [" ┌─┐ ", " └─┐ ", " └─┘ "],
-    '6': [" ┌─┐ ", " ├─┐ ", " └─┘ "],
-    '7': [" ┌── ", "   │ ", "   ┴ "],
-    '8': [" ┌─┐ ", " ├─┤ ", " └─┘ "],
-    '9': [" ┌─┐ ", " └─┤ ", " └─┘ "],
-    ':': ["   ", " 🎃 ", "   "],
-    'A': [" ┌─┐ ", " ├─┤ ", " ┴ ┴ "],
-    'P': [" ┌─┐ ", " ├─┘ ", " ┴   "],
-    'M': [" ┌┬┐ ", " │││ ", " ┴ ┴ "],
-    ' ': ["   ", "   ", "   "]
-}
-
-def render_large_12h_clock(now=None):
-    """Renders a 3-line ASCII large 12-Hour Digital Clock banner (HH:MM:SS AM/PM)."""
-    if now is None:
-        now = datetime.datetime.now()
-
-    time_12h = now.strftime("%I:%M:%S %p") # 12-Hour format with AM/PM
-    lines = ["", "", ""]
-
-    for char in time_12h:
-        char_upper = char.upper()
-        glyph = DIGITS_12H.get(char_upper, ["   ", "   ", "   "])
-        lines[0] += glyph[0]
-        lines[1] += glyph[1]
-        lines[2] += glyph[2]
-
-    return lines
 
 def get_calendar_lines(year=None, month=None, highlight_today=True):
     now = datetime.datetime.now()
@@ -81,6 +45,5 @@ def get_clock_info():
     return {
         "time": time_12h,
         "date": date_str,
-        "week": week_num,
-        "large_banner": render_large_12h_clock(now)
+        "week": week_num
     }
