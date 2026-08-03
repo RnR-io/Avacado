@@ -1,6 +1,6 @@
 """
-Avocado Terminal Dashboard Main CLI Entry Point v1.1.0
-Features 3-Column Equal Split Layout (Telemetry, Weather, Calendar & 12H Clock),
+Avocado Terminal Dashboard Main CLI Entry Point v1.5.0
+Features 3-Column Equal Split Layout, Full-Screen Hardware Telemetry & Graphs Page,
 Arrow-Key TUI Menu, Google Search Launcher, and GitHub Repo Info.
 """
 import sys
@@ -17,14 +17,14 @@ except ImportError:
     HAVE_READLINE = False
 
 from avocado.config import load_config, save_config, CONFIG_DIR
-from avocado.status import get_macos_status
+from avocado.status import get_macos_status, render_fullscreen_hardware_page
 from avocado.weather import get_weather
 from avocado.calendar_clock import get_calendar_lines, get_clock_info
 from avocado.github_info import get_github_info, open_github_in_browser
 from avocado.ui import render_dashboard, render_neofetch, clear_screen, get_theme, RESET, BOLD, DIM
 
 HISTORY_FILE = os.path.join(CONFIG_DIR, "history")
-COMMANDS = ["help", "status", "weather", "calendar", "google", "github", "neofetch", "settings", "theme", "clear", "quit", "exit"]
+COMMANDS = ["help", "status", "hardware", "weather", "calendar", "google", "github", "neofetch", "settings", "theme", "clear", "quit", "exit"]
 
 def setup_readline():
     if not HAVE_READLINE: return
@@ -75,7 +75,7 @@ def render_github_page():
   • \033[1mRepository:\033[0m   {info['full_name']}
   • \033[1mDescription:\033[0m  {info['description']}
   • \033[1mAuthor:\033[0m       {info['owner']}
-  • \033[1mVersion Tag:\033[0m  v1.1.0
+  • \033[1mVersion Tag:\033[0m  v1.5.0
   • \033[1mLicense:\033[0m      {info['license']}
   • \033[1mURL:\033[0m          {info['html_url']}
   • \033[1mUpdated:\033[0m      {info['updated_at']}
@@ -112,32 +112,34 @@ def run_settings_prompt(config):
             save_config(config)
 
 def run_tui_menu_navigation(config):
-    """Interactive TUI menu allowing navigation with Arrow Keys & selection with Enter."""
     from avocado.menu import run_menu
     opts = [
-        "1. Dashboard View (3-Column Equal Split)",
-        "2. Google Search Launcher",
-        "3. GitHub Repository Info & About",
-        "4. Terminal Settings & Preferences",
-        "5. Monthly Calendar & 12H Digital Clock",
-        "6. Weather Forecast & ASCII Art",
-        "7. Neofetch Hardware Telemetry Summary",
-        "8. Exit Avocado"
+        "1. Dashboard View (3-Column Equal Split Grid)",
+        "2. Full-Screen Hardware Telemetry & Real-Time Graphs",
+        "3. Google Search Launcher",
+        "4. GitHub Repository Info & About",
+        "5. Terminal Settings & Preferences",
+        "6. Monthly Calendar & 12H Digital Time",
+        "7. Weather Forecast & ASCII Art",
+        "8. Neofetch Hardware Telemetry Summary",
+        "9. Exit Avocado"
     ]
     idx = run_menu("🥑 AVOCADO INTERACTIVE TUI MENU", opts)
     if idx == 0: return "dashboard"
-    if idx == 1: return "google"
-    if idx == 2: return "github"
-    if idx == 3: return "settings"
-    if idx == 4: return "calendar"
-    if idx == 5: return "weather"
-    if idx == 6: return "neofetch"
-    if idx == 7: return "quit"
+    if idx == 1: return "hardware"
+    if idx == 2: return "google"
+    if idx == 3: return "github"
+    if idx == 4: return "settings"
+    if idx == 5: return "calendar"
+    if idx == 6: return "weather"
+    if idx == 7: return "neofetch"
+    if idx == 8: return "quit"
     return "dashboard"
 
 def main():
-    parser = argparse.ArgumentParser(description="Avocado: Native macOS Terminal Dashboard & CLI App v1.1.0")
+    parser = argparse.ArgumentParser(description="Avocado: Native macOS Terminal Dashboard & CLI App v1.5.0")
     parser.add_argument("--status", action="store_true", help="Print expanded laptop hardware telemetry and exit")
+    parser.add_argument("--hardware", action="store_true", help="Launch Full-Screen Hardware Telemetry & Graphs View")
     parser.add_argument("--weather", type=str, help="Get weather forecast for a city")
     parser.add_argument("--calendar", action="store_true", help="Print monthly calendar and 12-hour system time")
     parser.add_argument("--neofetch", action="store_true", help="Render macOS system neofetch ASCII art")
@@ -150,6 +152,13 @@ def main():
     args = parser.parse_args()
     config = load_config()
 
+    colors = get_theme(config.get("theme", "avocado"))
+
+    if args.hardware:
+        clear_screen()
+        print(render_fullscreen_hardware_page(colors))
+        return
+
     if args.google:
         run_google_search(args.google)
         return
@@ -159,7 +168,6 @@ def main():
         return
 
     if args.neofetch:
-        colors = get_theme(config.get("theme", "avocado"))
         print(render_neofetch(colors))
         return
 
@@ -168,6 +176,7 @@ def main():
         print(f"Model: {st['model']} ({st['os']})")
         print(f"Kernel: {st['kernel']} | GPU: {st['gpu']}")
         print(f"CPU: {st['cpu_brand']} - Load: {st['cpu_usage']}% (User: {st['cpu_user']}% | Sys: {st['cpu_sys']}%) [Load Avg: {st['load_avg']}]")
+        print(f"Sparkline: [{st['sparkline']}]")
         print(f"RAM: {st['used_ram_gb']}GB / {st['total_ram_gb']}GB ({st['ram_pct']}%) [Free: {st['free_ram_gb']}GB | Wired: {st['wired_ram_gb']}GB | Swap: {st['swap_used']}]")
         print(f"Disk: {st['disk_used']} / {st['disk_total']} ({st['disk_avail']} Free)")
         print(f"Battery: {st['batt_pct']}% ({st['power_source']})")
@@ -195,7 +204,12 @@ def main():
 
     if args.menu:
         choice = run_tui_menu_navigation(config)
-        if choice == "google": run_google_search()
+        if choice == "hardware":
+            clear_screen()
+            print(render_fullscreen_hardware_page(colors))
+            input("\nPress Enter to return...")
+            return
+        elif choice == "google": run_google_search()
         elif choice == "github": render_github_page()
         elif choice == "settings": run_settings_prompt(config)
         elif choice == "quit": sys.exit(0)
@@ -218,8 +232,8 @@ def main():
         p = colors["primary"]
         r = RESET
 
-        print(f"\nQuick Keys: {BOLD}[m]{r}enu (arrow keys)  {BOLD}[g]{r}oogle search  {BOLD}[i]{r}nfo github  {BOLD}[s]{r}ettings  {BOLD}[r]{r}efresh  {BOLD}[q]{r}uit")
-        print(f"{DIM}Press 'm' for Arrow-Key TUI Menu | UP/DOWN arrows for history | Tab autocomplete{RESET}")
+        print(f"\nQuick Keys: {BOLD}[m]{r}enu (arrow keys)  {BOLD}[h]{r}ardware page  {BOLD}[g]{r}oogle search  {BOLD}[i]{r}nfo github  {BOLD}[s]{r}ettings  {BOLD}[r]{r}efresh  {BOLD}[q]{r}uit")
+        print(f"{DIM}Press 'm' for Arrow-Key TUI Menu | Type 'hardware' for Full-Screen Telemetry | Tab autocomplete{RESET}")
 
         try:
             cmd_str = input(f"\n{p}avocado > {r}").strip()
@@ -240,7 +254,11 @@ def main():
             break
         elif cmd in ["m", "menu"]:
             choice = run_tui_menu_navigation(config)
-            if choice == "google": run_google_search()
+            if choice == "hardware":
+                clear_screen()
+                print(render_fullscreen_hardware_page(colors))
+                input("\nPress Enter to return...")
+            elif choice == "google": run_google_search()
             elif choice == "github": render_github_page()
             elif choice == "settings": run_settings_prompt(config)
             elif choice == "neofetch":
@@ -248,6 +266,10 @@ def main():
                 print(render_neofetch(colors, status))
                 input("\nPress Enter to return...")
             elif choice == "quit": break
+        elif cmd in ["h", "hardware", "telemetry"]:
+            clear_screen()
+            print(render_fullscreen_hardware_page(colors))
+            input("\nPress Enter to return to dashboard...")
         elif cmd in ["g", "google"]:
             query = " ".join(sub_args)
             run_google_search(query)
@@ -275,15 +297,16 @@ def main():
             clear_screen()
             print(render_neofetch(colors, status))
             input("\nPress Enter to return to dashboard...")
-        elif cmd in ["h", "help", "?"]:
+        elif cmd in ["help", "?"]:
             print("""
 Available Avocado Navigation & Commands:
-  • TUI Menu:     Type 'm' or run 'avocado --menu' for Arrow-Key + Enter TUI menu
-  • Single Keys:  [m]enu  [g]oogle  [i]nfo github  [r]efresh  [s]ettings  [c]alendar  [w]eather  [n]eofetch  [q]uit
-  • Google:       Type 'google <query>' or 'g <query>' to search Google in browser
-  • GitHub:       Type 'info' or 'i' to view repository details
-  • Arrows:       UP / DOWN arrows cycle through typed command history
-  • Tab:          Tab autocompletes command names
+  • Hardware Page: Type 'hardware' or 'h' for Full-Screen Telemetry & Graphs
+  • TUI Menu:      Type 'm' or run 'avocado --menu' for Arrow-Key + Enter TUI menu
+  • Single Keys:   [m]enu  [h]ardware  [g]oogle  [i]nfo github  [r]efresh  [s]ettings  [c]alendar  [w]eather  [n]eofetch  [q]uit
+  • Google:        Type 'google <query>' or 'g <query>' to search Google in browser
+  • GitHub:        Type 'info' or 'i' to view repository details
+  • Arrows:        UP / DOWN arrows cycle through typed command history
+  • Tab:           Tab autocompletes command names
 """)
             input("\nPress Enter to return to dashboard...")
         elif cmd == "theme":
@@ -295,7 +318,7 @@ Available Avocado Navigation & Commands:
         elif cmd == "clear":
             clear_screen()
         else:
-            print(f"Unknown command: {cmd}. Type 'h' or 'help' for shortcuts.")
+            print(f"Unknown command: {cmd}. Type 'help' for shortcuts.")
             time.sleep(1)
 
 if __name__ == "__main__":
