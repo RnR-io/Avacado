@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# macOS Terminal Dashboard Launcher Script
+# Starts native python daemon backend and opens browser
+
+APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+PORT=8765
+
+echo "=================================================="
+echo "  Starting macOS Terminal Dashboard & Landing Page"
+echo "=================================================="
+
+# Check Python 3
+if ! command -v python3 &> /dev/null; then
+    echo "Error: Python 3 is required to run the native macOS metrics server."
+    exit 1
+fi
+
+cd "$APP_DIR" || exit 1
+
+# Launch Python server in background if not already running
+if ! lsof -i :$PORT > /dev/null 2>&1; then
+    echo "Starting native macOS backend server on http://127.0.0.1:$PORT..."
+    python3 server.py &
+    SERVER_PID=$!
+    sleep 1
+else
+    echo "Server already active on http://127.0.0.1:$PORT"
+fi
+
+# Open browser to dashboard
+if command -v open &> /dev/null; then
+    open "http://127.0.0.1:$PORT"
+else
+    echo "Dashboard ready at: http://127.0.0.1:$PORT"
+fi

@@ -1,0 +1,27 @@
+{
+  "name": "mac-terminal-dashboard",
+  "version": "1.0.0",
+  "description": "Authentic macOS Terminal Dashboard & Landing Page with native system stats, weather, news, clock, favorite app launcher, and CLI prompt.",
+  "main": "server.py",
+  "bin": {
+    "mac-terminal-dashboard": "bin/mac-terminal-app"
+  },
+  "scripts": {
+    "start": "./bin/mac-terminal-app",
+    "serve": "python3 server.py"
+  },
+  "keywords": [
+    "macos",
+    "terminal",
+    "dashboard",
+    "landing-page",
+    "zsh",
+    "weather",
+    "news",
+    "system-monitor",
+    "app-switcher",
+    "homebrew"
+  ],
+  "author": "RnR-io",
+  "license": "MIT"
+}
