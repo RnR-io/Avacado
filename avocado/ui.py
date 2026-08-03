@@ -1,10 +1,16 @@
 """
-Terminal UI Utilities (ANSI Colors & High-Density CRT ASCII Art Render Engine)
-Features detailed CRT ASCII Avocado graphics, 3-column equal split layout, and visual performance graphs.
+Terminal UI Utilities (ANSI Colors & TrueColor Image Matrix Render Engine v1.7.0)
+Responsive Auto-Scaling Layout Engine:
+- 3-Column Equal Split Layout for wide terminals (cols >= 95)
+- Stacked Single-Panel Layout for compact terminals (cols < 95)
+- Strict Line Truncation & Box Border Enforcement
+- TrueColor RGB Image Graphic rendering for Neofetch & Header
 """
 import os
 import sys
+import re
 from avocado.calendar_clock import get_calendar_lines, get_clock_info
+from avocado.graphics import get_avocado_graphic
 
 # ANSI Color Codes
 RESET = "\033[0m"
@@ -56,23 +62,6 @@ THEME_COLORS = {
     }
 }
 
-DETAILED_AVOCADO_ART = [
-    "          .------------------.",
-    "        .'                    '.",
-    "       /     ..-------------..  \\",
-    "      |    .'   .---------.   '. |",
-    "      |   /   .'   .---.   '.   \\|",
-    "      |  |   /    /     \\    \\   |",
-    "      |  |  |    |   O   |    |  |",
-    "      |  |  |    |  (O)  |    |  |",
-    "      |  |   \\    \\     /    /   |",
-    "      |   \\   '.   '---'   .'   /",
-    "      |    '.   '---------'   .'",
-    "       \\     ''-------------''",
-    "        '.                    .'",
-    "          '------------------'"
-]
-
 def get_theme(theme_name="avocado"):
     return THEME_COLORS.get(theme_name.lower(), THEME_COLORS["avocado"])
 
@@ -83,12 +72,18 @@ def make_progress_bar(pct, length=12, fill_char="█", empty_char="░"):
     filled = int(round(length * (pct / 100.0)))
     return fill_char * filled + empty_char * (length - filled)
 
-def pad_str(text, width):
-    import re
+def truncate_and_pad(text, width):
+    """Strictly truncates text if too long and pads with spaces so box borders align 100% cleanly."""
     ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
     plain = ansi_escape.sub('', text)
-    pad_len = max(0, width - len(plain))
-    return text + (' ' * pad_len)
+
+    if len(plain) > width:
+        # Cleanly truncate plain text
+        truncated_plain = plain[:max(1, width - 1)] + "…"
+        return truncated_plain
+    else:
+        pad_len = max(0, width - len(plain))
+        return text + (' ' * pad_len)
 
 def render_neofetch(colors, status=None):
     p = colors["primary"]
@@ -101,8 +96,11 @@ def render_neofetch(colors, status=None):
         from avocado.status import get_macos_status
         status = get_macos_status()
 
-    cpu_bar = make_progress_bar(status['cpu_usage'], 12)
-    ram_bar = make_progress_bar(status['ram_pct'], 12)
+    # Get TrueColor Avocado Image Matrix
+    graphic_lines = get_avocado_graphic(width=22)
+
+    cpu_bar = make_progress_bar(status['cpu_usage'], 10)
+    ram_bar = make_progress_bar(status['ram_pct'], 10)
 
     sys_info = [
         f"{BOLD}{p}user@macbook-pro{r}",
@@ -119,13 +117,13 @@ def render_neofetch(colors, status=None):
         f"{t}Uptime:{r}            {status['uptime']}"
     ]
 
-    out_lines = [f"\n{BOLD}{a}AVOCADO ULTRA-DETAILED ASCII HARDWARE TELEMETRY SUMMARY{r}\n"]
+    out_lines = [f"\n{BOLD}{a}AVOCADO TRUECOLOR GRAPHICS HARDWARE SUMMARY{r}\n"]
 
-    max_rows = max(len(DETAILED_AVOCADO_ART), len(sys_info))
+    max_rows = max(len(graphic_lines), len(sys_info))
     for i in range(max_rows):
-        art_l = DETAILED_AVOCADO_ART[i] if i < len(DETAILED_AVOCADO_ART) else " " * 36
+        art_l = graphic_lines[i] if i < len(graphic_lines) else " " * 22
         info_l = sys_info[i] if i < len(sys_info) else ""
-        out_lines.append(f"  {a}{art_l}{r}   {info_l}")
+        out_lines.append(f"  {art_l}   {info_l}")
 
     return "\n".join(out_lines) + "\n"
 
@@ -142,41 +140,71 @@ def render_dashboard(status, weather, config):
     try:
         cols, rows = os.get_terminal_size()
     except Exception:
-        cols, rows = 115, 30
+        cols, rows = 100, 30
 
-    w = max(100, cols - 2)
-    col_w = max(30, (w - 6) // 3)
-    total_inner_w = col_w * 3 + 4
-
+    w = max(78, cols - 2)
     lines = []
 
+    # Dynamic Layout Mode Selection:
+    # If terminal is narrow (cols < 95), use Single-Panel Stacked Layout
+    # If terminal is wide (cols >= 95), use 3-Column Equal Split Layout
+    if cols < 95:
+        # Stacked Single-Panel Layout
+        lines.append(f"{b}┌{'─' * (w - 2)}┐{r}")
+        title_str = " [AVOCADO] MAC OS TERMINAL DASHBOARD "
+        lines.append(f"{b}│{r} {a}.---.{r} {BOLD}{p}{title_str}{r}{' ' * max(0, w - 8 - len(title_str))}{b}│{r}")
+        lines.append(f"{b}├{'─' * (w - 2)}┤{r}")
+
+        # Section 1: Hardware
+        lines.append(f"{b}│{r} {BOLD}{h}💻 HARDWARE TELEMETRY{r}{' ' * max(0, w - 23)}{b}│{r}")
+        lines.append(f"{b}│{r}  " + truncate_and_pad(f"Model: {status['model']} | OS: {status['os']} | CPU: {status['cpu_brand']}", w - 5) + f" {b}│{r}")
+        lines.append(f"{b}│{r}  " + truncate_and_pad(f"CPU Load: {status['cpu_usage']}% | RAM: {status['used_ram_gb']}/{status['total_ram_gb']}GB | Disk: {status['disk_avail']} Free", w - 5) + f" {b}│{r}")
+        lines.append(f"{b}├{'─' * (w - 2)}┤{r}")
+
+        # Section 2: Weather
+        lines.append(f"{b}│{r} {BOLD}{h}🌦 ASCII WEATHER ({weather.get('city', 'Location')}){r}{' ' * max(0, w - 21 - len(weather.get('city', 'Location')))}{b}│{r}")
+        lines.append(f"{b}│{r}  " + truncate_and_pad(f"Temp: {weather.get('temp')} ({weather.get('desc')}) | Wind: {weather.get('wind')}", w - 5) + f" {b}│{r}")
+        lines.append(f"{b}├{'─' * (w - 2)}┤{r}")
+
+        # Section 3: Calendar
+        clock_info = get_clock_info()
+        lines.append(f"{b}│{r} {BOLD}{h}📅 CALENDAR & 12H TIME ({clock_info['time']}){r}{' ' * max(0, w - 25 - len(clock_info['time']))}{b}│{r}")
+        for cl in get_calendar_lines()[:6]:
+            lines.append(f"{b}│{r}  " + truncate_and_pad(cl, w - 5) + f" {b}│{r}")
+        lines.append(f"{b}└{'─' * (w - 2)}┘{r}")
+        return "\n".join(lines)
+
+    # 3-Column Equal Split Layout for Wide Terminals (cols >= 95)
+    col_w = max(28, (w - 6) // 3)
+    total_inner_w = col_w * 3 + 4
+
     lines.append(f"{b}┌{'─' * (total_inner_w)}┐{r}")
-    title_str = " [AVOCADO] NATIVE MAC OS TERMINAL DASHBOARD & CONTROL CENTER "
+    title_str = " [AVOCADO] MAC OS TERMINAL DASHBOARD & CONTROL CENTER "
     lines.append(f"{b}│{r} {a}.---.{r}  {BOLD}{p}{title_str}{r}{' ' * max(0, total_inner_w - 9 - len(title_str))}{b}│{r}")
-    lines.append(f"{b}│{r} {p}( (O) ){r} {m}GuacMode Enabled | Visual Graphs & Arrow-Key TUI Controls{r}{' ' * max(0, total_inner_w - 61)}{b}│{r}")
+    lines.append(f"{b}│{r} {p}( (O) ){r} {m}TrueColor Image Graphics | Resilient Auto-Scaling Grid Layout{r}{' ' * max(0, total_inner_w - 68)}{b}│{r}")
     lines.append(f"{b}├{'─' * col_w}┬{'─' * (col_w + 2)}┬{'─' * col_w}┤{r}")
 
-    c1_h = pad_str(f"{BOLD}{h}💻 HARDWARE TELEMETRY{r}", col_w)
-    c2_h = pad_str(f"{BOLD}{h}🌦 ASCII WEATHER{r}", col_w + 2)
-    c3_h = pad_str(f"{BOLD}{h}📅 CALENDAR & 12H TIME{r}", col_w)
+    c1_h = truncate_and_pad(f"{BOLD}{h}💻 HARDWARE TELEMETRY{r}", col_w)
+    c2_h = truncate_and_pad(f"{BOLD}{h}🌦 ASCII WEATHER{r}", col_w + 2)
+    c3_h = truncate_and_pad(f"{BOLD}{h}📅 CALENDAR & 12H TIME{r}", col_w)
 
     lines.append(f"{b}│{r} {c1_h} {b}│{r} {c2_h} {b}│{r} {c3_h} {b}│{r}")
     lines.append(f"{b}├{'─' * col_w}┼{'─' * (col_w + 2)}┼{'─' * col_w}┤{r}")
 
-    cpu_bar = make_progress_bar(status['cpu_usage'], 10)
-    ram_bar = make_progress_bar(status['ram_pct'], 10)
-    disk_bar = make_progress_bar(status['disk_pct'], 10)
+    cpu_bar = make_progress_bar(status['cpu_usage'], 8)
+    ram_bar = make_progress_bar(status['ram_pct'], 8)
+    disk_bar = make_progress_bar(status['disk_pct'], 8)
 
     col1 = [
         f"{t}Model:{r} {status['model']}",
         f"{t}OS:{r} {status['os']}",
-        f"{t}Kernel:{r} {status['kernel'][:20]}",
-        f"{t}GPU:{r} {status['gpu'][:22]}",
-        f"{t}CPU:{r} {status['cpu_brand'][:20]}",
+        f"{t}Kernel:{r} {status['kernel']}",
+        f"{t}GPU:{r} {status['gpu']}",
+        f"{t}CPU:{r} {status['cpu_brand']}",
         f"{t}CPU Load:{r} [{a}{cpu_bar}{r}] {status['cpu_usage']}%",
         f"{t}Load Avg:{r} {status['load_avg']}",
-        f"{t}RAM:{r} [{a}{ram_bar}{r}] {status['used_ram_gb']}/{status['total_ram_gb']}GB",
-        f"{m}RAM Free:{r} {status['free_ram_gb']}GB | {m}Swap:{r} {status['swap_used']}",
+        f"{t}RAM:{r} [{a}{ram_bar}{r}] {status['used_ram_gb']}/{status['total_ram_gb']}G",
+        f"{m}Free:{r} {status['free_ram_gb']}G | {m}Swap:{r} {status['swap_used']}",
         f"{t}Disk:{r} [{a}{disk_bar}{r}] {status['disk_avail']} Free",
         f"{t}Battery:{r} 🔋 {status['batt_pct']}% ({status['power_source'][:8]})",
         f"{t}IP:{r} {status['local_ip']}",
@@ -217,9 +245,9 @@ def render_dashboard(status, weather, config):
         c2 = col2[idx] if idx < len(col2) else ""
         c3 = col3[idx] if idx < len(col3) else ""
 
-        p_c1 = pad_str(c1, col_w)
-        p_c2 = pad_str(c2, col_w + 2)
-        p_c3 = pad_str(c3, col_w)
+        p_c1 = truncate_and_pad(c1, col_w)
+        p_c2 = truncate_and_pad(c2, col_w + 2)
+        p_c3 = truncate_and_pad(c3, col_w)
 
         lines.append(f"{b}│{r} {p_c1} {b}│{r} {p_c2} {b}│{r} {p_c3} {b}│{r}")
 
