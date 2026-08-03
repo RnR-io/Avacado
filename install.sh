@@ -29,12 +29,13 @@ fi
 
 chmod +x "$INSTALL_DIR/bin/avocado"
 
-# Create global executable symlink
+# Create global executable symlinks for both avocado and avacado
 ln -sf "$INSTALL_DIR/bin/avocado" "$BIN_DIR/avocado"
+ln -sf "$INSTALL_DIR/bin/avocado" "$BIN_DIR/avacado"
 
 echo "--------------------------------------------------"
-echo "✅ Avocado successfully installed in $BIN_DIR/avocado!"
+echo "✅ Avocado successfully installed in $BIN_DIR!"
 echo ""
-echo "To launch Avocado anytime, simply run:"
-echo "   avocado"
+echo "To launch Avocado anytime, run:"
+echo "   avocado  (or avacado)"
 echo "=================================================="

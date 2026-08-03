@@ -10,6 +10,7 @@ class Avocado < Formula
   def install
     libexec.install Dir["*"]
     bin.install_symlink libexec/"bin/avocado" => "avocado"
+    bin.install_symlink libexec/"bin/avocado" => "avacado"
   end
 
   def caveats
@@ -18,10 +19,8 @@ class Avocado < Formula
       
       To start the terminal dashboard, run:
         avocado
-      
-      To check laptop status or neofetch:
-        avocado --status
-        avocado --neofetch
+      or
+        avacado
     EOS
   end
 
