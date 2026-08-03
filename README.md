@@ -1,6 +1,28 @@
-# Avocado: Native macOS Terminal Dashboard & CLI App
+# 🥑 Avocado: Native macOS Terminal Dashboard & CLI App
 
 > A pure native macOS terminal dashboard application (CLI & TUI) that runs directly inside macOS Terminal, iTerm2, Kitty, Alacritty, or zsh/bash. **Zero web servers, zero browsers, zero third-party dependencies required!**
+
+---
+
+## ⚡ 1-Step Quick Installation
+
+### Option 1: One-Line Curl Install (Simplest — Works Anywhere)
+
+Copy & paste this single command into your terminal:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/RnR-io/Avacado/main/install.sh | bash
+```
+
+---
+
+### Option 2: One-Line Homebrew Install
+
+```bash
+brew install RnR-io/Avacado/avocado
+```
+
+Once installed, simply run **`avocado`** in any terminal window!
 
 ---
 
@@ -28,29 +50,7 @@
 
 ---
 
-## 📦 Homebrew Installation
-
-Install globally on any Mac using Homebrew:
-
-```bash
-# 1. Tap the repository
-brew tap RnR-io/Avacado https://github.com/RnR-io/Avacado.git
-
-# 2. Trust tap (if prompted by Homebrew)
-brew trust rnr-io/avacado
-
-# 3. Install avocado
-brew install avocado
-
-# 4. Run anywhere!
-avocado
-```
-
----
-
 ## 🚀 Terminal Commands & Usage
-
-Once installed globally, run `avocado` from any terminal prompt:
 
 | Command | Description |
 | :--- | :--- |
