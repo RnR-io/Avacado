@@ -1,11 +1,13 @@
 """
-Avocado Terminal Dashboard Main CLI Entry Point
-Features readline command history (Up/Down arrow navigation), tab completion, and single-key shortcuts.
+Avocado Terminal Dashboard Main CLI Entry Point v1.1.0
+Features interactive arrow-key TUI menu, Google Search launcher, GitHub Repo Info, 12-Hour clock, and expanded telemetry.
 """
 import sys
 import os
 import argparse
 import time
+import urllib.parse
+import webbrowser
 
 try:
     import readline
@@ -17,36 +19,27 @@ from avocado.config import load_config, save_config, CONFIG_DIR
 from avocado.status import get_macos_status
 from avocado.weather import get_weather
 from avocado.calendar_clock import get_calendar_lines, get_clock_info
+from avocado.github_info import get_github_info, open_github_in_browser
 from avocado.ui import render_dashboard, render_neofetch, clear_screen, get_theme, RESET, BOLD, DIM
 
 HISTORY_FILE = os.path.join(CONFIG_DIR, "history")
-COMMANDS = ["help", "status", "weather", "calendar", "neofetch", "settings", "theme", "clear", "quit", "exit"]
+COMMANDS = ["help", "status", "weather", "calendar", "google", "github", "neofetch", "settings", "theme", "clear", "quit", "exit"]
 
 def setup_readline():
-    """Configures readline for Up/Down arrow history navigation & tab completion."""
-    if not HAVE_READLINE:
-        return
-
-    # Load history
+    if not HAVE_READLINE: return
     if os.path.exists(HISTORY_FILE):
-        try:
-            readline.read_history_file(HISTORY_FILE)
-        except Exception:
-            pass
+        try: readline.read_history_file(HISTORY_FILE)
+        except Exception: pass
 
-    # Save history on exit
     import atexit
     atexit.register(save_readline_history)
 
-    # Enable autocompletion
     def completer(text, state):
         options = [c for c in COMMANDS if c.startswith(text.lower())]
-        if state < len(options):
-            return options[state]
-        return None
+        return options[state] if state < len(options) else None
 
     readline.set_completer(completer)
-    if "libedit" in readline.__doc__ if readline.__doc__ else False:
+    if "libedit" in (readline.__doc__ or ""):
         readline.parse_and_bind("bind ^I rl_complete")
     else:
         readline.parse_and_bind("tab: complete")
@@ -56,8 +49,43 @@ def save_readline_history():
         try:
             readline.set_history_length(100)
             readline.write_history_file(HISTORY_FILE)
-        except Exception:
-            pass
+        except Exception: pass
+
+def run_google_search(query=None):
+    if not query:
+        print(f"\n{BOLD}🔍 GOOGLE SEARCH LAUNCHER{r}")
+        query = input(f"Enter Google search query: ").strip()
+
+    if query:
+        search_url = f"https://www.google.com/search?q={urllib.parse.quote(query)}"
+        print(f"Opening Google search for '{query}' in default browser...")
+        try:
+            webbrowser.open(search_url)
+        except Exception as e:
+            print(f"Error launching browser: {e}")
+        time.sleep(1)
+
+def render_github_page():
+    clear_screen()
+    info = get_github_info()
+    print(f"""
+\033[1;32m 🥑 GITHUB REPOSITORY INFO & ABOUT PAGE\033[0m
+--------------------------------------------------
+  • \033[1mRepository:\033[0m   {info['full_name']}
+  • \033[1mDescription:\033[0m  {info['description']}
+  • \033[1mAuthor:\033[0m       {info['owner']}
+  • \033[1mVersion Tag:\033[0m  v1.1.0
+  • \033[1mLicense:\033[0m      {info['license']}
+  • \033[1mURL:\033[0m          {info['html_url']}
+  • \033[1mUpdated:\033[0m      {info['updated_at']}
+--------------------------------------------------
+Options:
+  [1] Open Repository in Browser
+  [2] Return to Dashboard
+""")
+    choice = input("\033[1;32mavocado > \033[0m").strip()
+    if choice == '1':
+        open_github_in_browser()
 
 def run_settings_prompt(config):
     colors = get_theme(config.get("theme", "avocado"))
@@ -92,17 +120,52 @@ def run_settings_prompt(config):
             save_config(config)
             print(f"Location updated to '{city_choice}'!")
 
+def run_tui_menu_navigation(config):
+    """Interactive TUI menu allowing navigation with Arrow Keys & selection with Enter."""
+    from avocado.menu import run_menu
+    opts = [
+        "1. Dashboard View",
+        "2. Google Search Launcher",
+        "3. GitHub Repository Info",
+        "4. Monthly Calendar & 12H Clock",
+        "5. Weather Forecast & ASCII Art",
+        "6. Hardware Telemetry Summary",
+        "7. Terminal Settings",
+        "8. Exit Avocado"
+    ]
+    idx = run_menu("🥑 AVOCADO TUI MENU SELECTION", opts)
+    if idx == 0: return "dashboard"
+    if idx == 1: return "google"
+    if idx == 2: return "github"
+    if idx == 3: return "calendar"
+    if idx == 4: return "weather"
+    if idx == 5: return "status"
+    if idx == 6: return "settings"
+    if idx == 7: return "quit"
+    return "dashboard"
+
 def main():
-    parser = argparse.ArgumentParser(description="Avocado: Native macOS Terminal Dashboard & CLI App")
+    parser = argparse.ArgumentParser(description="Avocado: Native macOS Terminal Dashboard & CLI App v1.1.0")
     parser.add_argument("--status", action="store_true", help="Print expanded laptop hardware telemetry and exit")
     parser.add_argument("--weather", type=str, help="Get weather forecast for a city")
-    parser.add_argument("--calendar", action="store_true", help="Print monthly calendar and system time")
+    parser.add_argument("--calendar", action="store_true", help="Print monthly calendar and 12-hour system time")
     parser.add_argument("--neofetch", action="store_true", help="Render macOS system neofetch ASCII art")
+    parser.add_argument("--github", action="store_true", help="Display GitHub repository info and about page")
+    parser.add_argument("--google", type=str, help="Search Google in default browser")
+    parser.add_argument("--menu", action="store_true", help="Launch interactive Arrow-Key TUI Menu")
     parser.add_argument("--settings", action="store_true", help="Open terminal settings configuration")
     parser.add_argument("--once", action="store_true", help="Render dashboard once and exit")
 
     args = parser.parse_args()
     config = load_config()
+
+    if args.google:
+        run_google_search(args.google)
+        return
+
+    if args.github:
+        render_github_page()
+        return
 
     if args.neofetch:
         colors = get_theme(config.get("theme", "avocado"))
@@ -112,9 +175,9 @@ def main():
     if args.status:
         st = get_macos_status()
         print(f"Model: {st['model']} ({st['os']})")
-        print(f"Kernel: {st['kernel']}")
-        print(f"CPU: {st['cpu_brand']} - Load: {st['cpu_usage']}% (User: {st['cpu_user']}% | Sys: {st['cpu_sys']}%)")
-        print(f"RAM: {st['used_ram_gb']}GB / {st['total_ram_gb']}GB ({st['ram_pct']}%) [Free: {st['free_ram_gb']}GB]")
+        print(f"Kernel: {st['kernel']} | GPU: {st['gpu']}")
+        print(f"CPU: {st['cpu_brand']} - Load: {st['cpu_usage']}% (User: {st['cpu_user']}% | Sys: {st['cpu_sys']}%) [Load Avg: {st['load_avg']}]")
+        print(f"RAM: {st['used_ram_gb']}GB / {st['total_ram_gb']}GB ({st['ram_pct']}%) [Free: {st['free_ram_gb']}GB | Wired: {st['wired_ram_gb']}GB | Swap: {st['swap_used']}]")
         print(f"Disk: {st['disk_used']} / {st['disk_total']} ({st['disk_avail']} Free)")
         print(f"Battery: {st['batt_pct']}% ({st['power_source']})")
         print(f"Network: {st['local_ip']} ({st['net_if']})")
@@ -139,6 +202,13 @@ def main():
         run_settings_prompt(config)
         return
 
+    if args.menu:
+        choice = run_tui_menu_navigation(config)
+        if choice == "google": run_google_search()
+        elif choice == "github": render_github_page()
+        elif choice == "settings": run_settings_prompt(config)
+        elif choice == "quit": sys.exit(0)
+
     status = get_macos_status()
     weather = get_weather(config.get("default_city", "auto"), config.get("temp_unit", "C"))
 
@@ -146,7 +216,6 @@ def main():
         print(render_dashboard(status, weather, config))
         return
 
-    # Setup Readline for Up/Down arrow history & Tab Completion
     setup_readline()
 
     # Main Interactive Command Loop
@@ -158,8 +227,8 @@ def main():
         p = colors["primary"]
         r = RESET
 
-        print(f"\nQuick Keys: {BOLD}[r]{r}efresh  {BOLD}[s]{r}ettings  {BOLD}[c]{r}alendar  {BOLD}[w]{r}eather  {BOLD}[n]{r}eofetch  {BOLD}[q]{r}uit")
-        print(f"{m if 'm' in locals() else DIM}Use UP/DOWN arrows for history | Tab to autocomplete commands{RESET}")
+        print(f"\nQuick Keys: {BOLD}[g]{r}oogle search  {BOLD}[i]{r}nfo github  {BOLD}[r]{r}efresh  {BOLD}[s]{r}ettings  {BOLD}[c]{r}alendar  {BOLD}[m]{r}enu  {BOLD}[q]{r}uit")
+        print(f"{DIM}Use UP/DOWN arrows for command history | Type 'google <query>' to search | Tab autocomplete{RESET}")
 
         try:
             cmd_str = input(f"\n{p}avocado > {r}").strip()
@@ -175,10 +244,21 @@ def main():
         cmd = parts[0].lower()
         sub_args = parts[1:]
 
-        # Single-key & Full Command Shortcuts
         if cmd in ["q", "quit", "exit"]:
             print("Exiting Avocado Terminal App. Have a great day!")
             break
+        elif cmd in ["g", "google"]:
+            query = " ".join(sub_args)
+            run_google_search(query)
+        elif cmd in ["i", "info", "github"]:
+            render_github_page()
+            input("\nPress Enter to return...")
+        elif cmd in ["m", "menu"]:
+            choice = run_tui_menu_navigation(config)
+            if choice == "google": run_google_search()
+            elif choice == "github": render_github_page()
+            elif choice == "settings": run_settings_prompt(config)
+            elif choice == "quit": break
         elif cmd in ["r", "status", "refresh"]:
             status = get_macos_status()
         elif cmd in ["s", "settings"]:
@@ -198,21 +278,17 @@ def main():
             weather = get_weather(city, config.get("temp_unit", "C"))
         elif cmd in ["n", "neofetch", "macfetch"]:
             clear_screen()
-            print(render_neofetch(colors))
+            print(render_neofetch(colors, status))
             input("\nPress Enter to return to dashboard...")
         elif cmd in ["h", "help", "?"]:
             print("""
 Available Avocado Navigation & Commands:
-  • Single Keys:  [r]efresh  [s]ettings  [c]alendar  [w]eather  [n]eofetch  [q]uit
+  • Single Keys:  [g]oogle  [i]nfo github  [m]enu  [r]efresh  [s]ettings  [c]alendar  [w]eather  [n]eofetch  [q]uit
+  • Menu:         Type 'm' or run 'avocado --menu' for Arrow-Key + Enter TUI menu
+  • Google:       Type 'google <query>' or 'g <query>' to search Google in browser
+  • GitHub:       Type 'info' or 'i' to view repository details
   • Arrows:       UP / DOWN arrows cycle through typed command history
   • Tab:          Tab autocompletes command names
-  • Full Commands:
-      status             - Refresh laptop telemetry
-      weather [city]     - Search weather for any city
-      calendar           - Show monthly calendar grid
-      settings           - Open preferences editor
-      theme [name]       - Change theme (avocado, matrix, dracula, ocean, amber)
-      clear              - Clear terminal screen
 """)
             input("\nPress Enter to return to dashboard...")
         elif cmd == "theme":
