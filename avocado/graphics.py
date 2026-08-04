@@ -108,29 +108,31 @@ def render_truecolor_pixel_matrix(image_path, colors=None, width=22):
             except Exception: pass
 
 def get_avocado_graphic(colors=None, width=22):
-    """Returns transparent, theme-colored Avocado Graphic."""
-    asset_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets", "avocado_logo.png")
-    if os.path.exists(asset_path):
-        lines = render_truecolor_pixel_matrix(asset_path, colors=colors, width=width)
-        if lines:
-            return lines
-
-    p = colors.get("primary", "\033[32m") if colors else "\033[32m"
-    a = colors.get("accent", "\033[36m") if colors else "\033[36m"
-    h = colors.get("header", "\033[33m") if colors else "\033[33m"
-    r = "\033[0m"
-
-    return [
-        f"       {p}.------------.{r}",
-        f"     {p}.'   {a}.------.   {p}'.{r}",
-        f"    {p}/   {a}.'   {h}@@   {a}'.   {p}\\ {r}",
-        f"   {p}|   {a}/   {h}.----.   {a}\\   {p}|{r}",
-        f"   {p}|  {a}|   {h}/  (O) \\   {a}|  {p}|{r}",
-        f"   {p}|  {a}|  {h}|  (###) |  {a}|  {p}|{r}",
-        f"   {p}|  {a}|   {h}\\  (O) /   {a}|  {p}|{r}",
-        f"   {p}|   {a}\\   {h}'----'   {a}/   {p}|{r}",
-        f"    {p}\\   {a}'.        .'   {p}/ {r}",
-        f"     {p}'.   {a}'------'   {p}.'  {r}",
-        f"       {p}'------------'   {r}"
+    """
+    Returns the new high-density multi-color gradient ASCII Avocado Graphic
+    matching the user's latest iteration screenshot style.
+    """
+    reset = "\033[0m"
+    gradient_ascii = [
+        ("\033[38;2;120;150;120m", "            . ."),
+        ("\033[38;2;110;170;110m", "         , xNMM."),
+        ("\033[38;2;120;190;100m", "       .OMMMM0"),
+        ("\033[38;2;140;205;90m",  "       lMM\""),
+        ("\033[38;2;150;215;80m",  "     .;loddo:.  .olloddol;."),
+        ("\033[38;2;155;215;75m",  "   cKMMMMMMMMMMNWMMMMMMMMMMO:"),
+        ("\033[38;2;215;195;65m",  ".KMMMMMMMMMMMMMMMMMMMMMMMMWd."),
+        ("\033[38;2;235;175;65m",  "XMMMMMMMMMMMMMMMMMMMMMMMMMMMX."),
+        ("\033[38;2;235;115;75m",  ";MMMMMMMMMMMMMMMMMMMMMMMMMMMM:"),
+        ("\033[38;2;235;105;75m",  ":MMMMMMMMMMMMMMMMMMMMMMMMMMMM:"),
+        ("\033[38;2;235;105;75m",  ".MMMMMMMMMMMMMMMMMMMMMMMMMMMX."),
+        ("\033[38;2;225;125;95m",  "kMMMMMMMMMMMMMMMMMMMMMMMMMMMWd."),
+        ("\033[38;2;195;125;195m", "'XMMMMMMMMMMMMMMMMMMMMMMMMMMMK"),
+        ("\033[38;2;185;125;205m", "'XMMMMMMMMMMMMMMMMMMMMMMMMMMMK."),
+        ("\033[38;2;135;145;215m", " kMMMMMMMMMMMMMMMMMMMMMMMMMMd"),
+        ("\033[38;2;105;145;195m", "  ;KMMMMMMMWXXWMMMMMMMMMk."),
+        ("\033[38;2;125;165;195m", "    \"cooc*\"    \"*coo' \"")
     ]
+
+    return [f"{color_code}{line_str}{reset}" for color_code, line_str in gradient_ascii]
+
 
