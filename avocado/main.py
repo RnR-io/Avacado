@@ -136,6 +136,52 @@ def run_tui_menu_navigation(config):
     if idx == 8: return "quit"
     return "dashboard"
 
+import select
+import tty
+import termios
+
+def run_hardware_live_view(colors):
+    """
+    Renders live real-time Hardware Telemetry page updating automatically every 1.0s.
+    Pressing 'q', ESC, or ENTER returns to dashboard cleanly.
+    """
+    fd = sys.stdin.fileno()
+    try:
+        old_settings = termios.tcgetattr(fd)
+        is_terminal = True
+    except Exception:
+        is_terminal = False
+
+    if is_terminal:
+        try:
+            tty.setcbreak(fd)
+        except Exception:
+            is_terminal = False
+
+    try:
+        while True:
+            clear_screen()
+            print(render_fullscreen_hardware_page(colors))
+            print(f"\n{DIM}⚡ Real-Time Live Telemetry (1.0s) | Press 'q' or ENTER to return to dashboard...{RESET}")
+            
+            if is_terminal:
+                rlist, _, _ = select.select([sys.stdin], [], [], 1.0)
+                if rlist:
+                    ch = sys.stdin.read(1)
+                    if ch:
+                        break
+            else:
+                time.sleep(1)
+                break
+    except (KeyboardInterrupt, Exception):
+        pass
+    finally:
+        if is_terminal:
+            try:
+                termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+            except Exception:
+                pass
+
 def main():
     parser = argparse.ArgumentParser(description="Avocado: Native macOS Terminal Dashboard & CLI App v2.0.0")
     parser.add_argument("-v", "-V", "--version", action="store_true", help="Print Avocado version info and exit")
@@ -157,12 +203,10 @@ def main():
         return
 
     config = load_config()
-
     colors = get_theme(config.get("theme", "avocado"))
 
     if args.hardware:
-        clear_screen()
-        print(render_fullscreen_hardware_page(colors))
+        run_hardware_live_view(colors)
         return
 
     if args.google:
@@ -190,7 +234,6 @@ def main():
         print(f"Uptime: {st['uptime']}")
         return
 
-
     if args.weather:
         w = get_weather(args.weather, config.get("temp_unit", "C"))
         print(f"Weather for {w['city']}: {w['temp']} - {w['desc']} (Wind: {w['wind']})")
@@ -212,9 +255,7 @@ def main():
     if args.menu:
         choice = run_tui_menu_navigation(config)
         if choice == "hardware":
-            clear_screen()
-            print(render_fullscreen_hardware_page(colors))
-            input("\nPress Enter to return...")
+            run_hardware_live_view(colors)
             return
         elif choice == "google": run_google_search()
         elif choice == "github": render_github_page()
@@ -252,7 +293,6 @@ def main():
         if not cmd_str:
             continue
 
-
         parts = cmd_str.split()
         cmd = parts[0].lower()
         sub_args = parts[1:]
@@ -263,9 +303,7 @@ def main():
         elif cmd in ["m", "menu"]:
             choice = run_tui_menu_navigation(config)
             if choice == "hardware":
-                clear_screen()
-                print(render_fullscreen_hardware_page(colors))
-                input("\nPress Enter to return...")
+                run_hardware_live_view(colors)
             elif choice == "google": run_google_search()
             elif choice == "github": render_github_page()
             elif choice == "settings": run_settings_prompt(config)
@@ -275,14 +313,13 @@ def main():
                 input("\nPress Enter to return...")
             elif choice == "quit": break
         elif cmd in ["h", "hardware", "telemetry"]:
-            clear_screen()
-            print(render_fullscreen_hardware_page(colors))
-            input("\nPress Enter to return to dashboard...")
+            run_hardware_live_view(colors)
         elif cmd in ["g", "google"]:
             query = " ".join(sub_args)
             run_google_search(query)
         elif cmd in ["i", "info", "github"]:
             render_github_page()
+
             input("\nPress Enter to return...")
         elif cmd in ["r", "status", "refresh"]:
             status = get_macos_status()
