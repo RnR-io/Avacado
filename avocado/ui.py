@@ -113,11 +113,17 @@ def render_neofetch(colors, status=None):
 
     out_lines = [f"\n{BOLD}{a}AVOCADO TELEMETRY{r}\n"]
 
+    import re
+    def get_visible_len(s):
+        return len(re.sub(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])', '', s))
+
     max_rows = max(len(graphic_lines), len(sys_info))
     for i in range(max_rows):
-        art_l = graphic_lines[i] if i < len(graphic_lines) else " " * 22
+        art_l = graphic_lines[i] if i < len(graphic_lines) else ""
+        v_len = get_visible_len(art_l)
+        padded_art = art_l + (" " * max(0, 28 - v_len))
         info_l = sys_info[i] if i < len(sys_info) else ""
-        out_lines.append(f"  {art_l}   {info_l}")
+        out_lines.append(f"  {padded_art}  {info_l}")
 
     return "\n".join(out_lines) + "\n"
 
