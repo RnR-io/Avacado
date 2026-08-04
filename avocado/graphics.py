@@ -128,20 +128,21 @@ def get_avocado_graphic(colors=None, width=22):
     m = colors.get("muted", "\033[90m")
     r = "\033[0m"
 
-    # Textured Symmetrical Teardrop Avocado ASCII Shape
+    # Ultra High-Density Detailed Teardrop Avocado ASCII Shape
     return [
         f"             {m}. .{r}",
         f"            {p}/{r}{m}---{r}{p}\\{r}",
-        f"           {p}/{r} {a}(o) {p}\\{r}",
-        f"          {p}/{r}{a}::-::-::{r}{p}\\{r}",
-        f"         {p}/{r}  {a}.---.{r}  {p}\\{r}",
-        f"        {p}|{r} {a}░{r} {a}/ {h}(O){a} \\{r} {a}░{r} {p}|{r}",
-        f"        {p}|{r}{a}░░{r}{a}| {h}(###){a} |{r}{a}░░{r}{p}|{r}",
-        f"        {p}|{r} {a}░{r} {a}\\ {h}(O){a} /{r} {a}░{r} {p}|{r}",
-        f"         {p}\\{r}  {a}`---'{r}  {p}/{r}",
-        f"          {p}\\{r}{a}~~~~~~~{r}{p}/{r}",
+        f"           {p}/{r}{a}::(o)::{r}{p}\\{r}",
+        f"          {p}/{r}{a}░▒▓+▓▒░{r}{p}\\{r}",
+        f"         {p}/{r}{a}░▒.---.▒░{r}{p}\\{r}",
+        f"        {p}|{r}{a}░▒▓{r}{a}/ {h}(O){a} \\{r}{a}▓▒░{r}{p}|{r}",
+        f"        {p}|{r}{a}▒▓{r}{a}| {h}(###){a} |{r}{a}▓▒{r}{p}|{r}",
+        f"        {p}|{r}{a}░▒▓{r}{a}\\ {h}(O){a} /{r}{a}▓▒░{r}{p}|{r}",
+        f"         {p}\\{r}{a}░▒`---'▒░{r}{p}/{r}",
+        f"          {p}\\{r}{a}░▒▓~▓▒░{r}{p}/{r}",
         f"           {p}`-----'{r}"
     ]
+
 
 
 

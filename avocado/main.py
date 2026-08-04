@@ -272,7 +272,7 @@ def main():
 
     setup_readline()
 
-    # Main Interactive Command Loop
+    # Main Interactive Command Loop (Battery-Friendly 2.5s Live Refresh)
     while True:
         status = get_macos_status()
         clear_screen()
@@ -282,11 +282,16 @@ def main():
         p = colors["primary"]
         r = RESET
 
-        print(f"\nQuick Keys: {BOLD}[m]{r}enu (arrow keys)  {BOLD}[h]{r}ardware page  {BOLD}[g]{r}oogle search  {BOLD}[i]{r}nfo github  {BOLD}[s]{r}ettings  {BOLD}[r]{r}efresh  {BOLD}[q]{r}uit")
-        print(f"{DIM}Press 'm' for Arrow-Key TUI Menu | Type 'hardware' for Full-Screen Telemetry | Tab autocomplete{RESET}")
+        print(f"\nQuick Keys: {BOLD}[m]{r}enu (arrow keys)  {BOLD}[h]{r}ardware page  {BOLD}[g]{r}oogle search  {BOLD}[i]{r}nfo github  {BOLD}[s]{r}ettings  {BOLD}[q]{r}uit")
+        print(f"{DIM}⚡ Battery-Friendly Auto-Refresh (2.5s) | Press 'm' for Menu | Type 'hardware' for Telemetry{RESET}")
+        sys.stdout.write(f"\n{p}avocado > {r}")
+        sys.stdout.flush()
 
         try:
-            cmd_str = input(f"\n{p}avocado > {r}").strip()
+            rlist, _, _ = select.select([sys.stdin], [], [], 2.5)
+            if not rlist:
+                continue
+            cmd_str = sys.stdin.readline().strip()
         except (KeyboardInterrupt, EOFError):
             print("\nExiting Avocado Terminal App. Goodbye!")
             break
@@ -297,6 +302,7 @@ def main():
         parts = cmd_str.split()
         cmd = parts[0].lower()
         sub_args = parts[1:]
+
 
         if cmd in ["q", "quit", "exit"]:
             print("Exiting Avocado Terminal App. Have a great day!")
