@@ -68,14 +68,20 @@ def make_progress_bar(pct, length=10, fill_char="█", empty_char="░"):
     filled = int(round(length * (pct / 100.0)))
     return fill_char * filled + empty_char * (length - filled)
 
-def truncate_and_pad(text, width):
-    ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
-    plain = ansi_escape.sub('', text)
+def get_visible_len(s):
+    if not s:
+        return 0
+    clean = re.sub(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])', '', s)
+    extra_width = sum(1 for c in clean if ord(c) >= 0x2300)
+    return len(clean) + extra_width
 
-    if len(plain) > width:
-        return plain[:max(1, width - 1)] + "…"
+def truncate_and_pad(text, width):
+    vis_len = get_visible_len(text)
+    if vis_len > width:
+        clean = re.sub(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])', '', text)
+        return clean[:max(1, width - 1)] + "…"
     else:
-        pad_len = max(0, width - len(plain))
+        pad_len = max(0, width - vis_len)
         return text + (' ' * pad_len)
 
 def render_neofetch(colors, status=None):
@@ -117,14 +123,11 @@ def render_neofetch(colors, status=None):
         f"{t}Uptime:{r}            {status['uptime']}"
     ]
 
-    import re
-    def get_visible_len(s):
-        return len(re.sub(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])', '', s))
-
     out_lines = []
     out_lines.append(f"{b}┌{'─' * (w - 2)}┐{r}")
     title_str = " GUACA TELEMETRY 🥑 (Guaca Mode Active) "
-    out_lines.append(f"{b}│{r} {BOLD}{a}{title_str}{r}{' ' * max(0, w - 4 - len(title_str))}{b}│{r}")
+    title_vis_len = get_visible_len(title_str)
+    out_lines.append(f"{b}│{r} {BOLD}{a}{title_str}{r}{' ' * max(0, w - 3 - title_vis_len)}{b}│{r}")
     out_lines.append(f"{b}├{'─' * (w - 2)}┤{r}")
 
     max_rows = max(len(graphic_lines), len(sys_info))
@@ -141,6 +144,7 @@ def render_neofetch(colors, status=None):
     out_lines.append(f"{b}└{'─' * (w - 2)}┘{r}")
 
     return "\n".join(out_lines) + "\n"
+
 
 
 def render_dashboard(status, weather, config):
