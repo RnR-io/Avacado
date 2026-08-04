@@ -172,12 +172,11 @@ def render_dashboard(status, weather, config):
     total_inner_w = col_w1 + col_w2 + col_w3 + 4
 
     lines.append(f"{b}┌{'─' * total_inner_w}┐{r}")
-    title_str = " AVOCADO CONTROL CENTER "
-    sub_str = "v2.0.0 | Native Telemetry Dashboard"
+    title_str = " AVOCADO CONTROL CENTER [BETA] "
+    sub_str = "v2.0.0 Beta Release | Live Native macOS Telemetry"
     lines.append(f"{b}│{r} {a}.---.{r}  {BOLD}{p}{title_str}{r}{' ' * max(0, total_inner_w - 9 - len(title_str))}{b}│{r}")
     lines.append(f"{b}│{r} {p}( (O) ){r} {m}{sub_str}{r}{' ' * max(0, total_inner_w - 9 - len(sub_str))}{b}│{r}")
     lines.append(f"{b}├{'─' * col_w1}┬{'─' * (col_w2 + 2)}┬{'─' * col_w3}┤{r}")
-
 
     c1_h = truncate_and_pad(f"{BOLD}{h}Hardware Telemetry{r}", col_w1)
     c2_h = truncate_and_pad(f"{BOLD}{h}Weather{r}", col_w2 + 2)
@@ -246,6 +245,8 @@ def render_dashboard(status, weather, config):
         lines.append(f"{b}│{r} {p_c1} {b}│{r} {p_c2} {b}│{r} {p_c3} {b}│{r}")
 
     lines.append(f"{b}└{'─' * col_w1}┴{'─' * (col_w2 + 2)}┴{'─' * col_w3}┘{r}")
+    lines.append(f"{m}🥑 Avocado v2.0.0 (Beta) · Developer: RnR-io · Repository: https://github.com/RnR-io/Avacado{r}")
 
     return "\n".join(lines)
+
 

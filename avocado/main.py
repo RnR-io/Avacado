@@ -232,6 +232,7 @@ def main():
 
     # Main Interactive Command Loop
     while True:
+        status = get_macos_status()
         clear_screen()
         print(render_dashboard(status, weather, config))
 
@@ -249,8 +250,8 @@ def main():
             break
 
         if not cmd_str:
-            status = get_macos_status()
             continue
+
 
         parts = cmd_str.split()
         cmd = parts[0].lower()
