@@ -43,8 +43,10 @@ def load_config():
 def save_config(config):
     try:
         ensure_secure_dir()
-        with open(CONFIG_FILE, "w", encoding="utf-8") as f:
-            json.dump(config, f, indent=2)
-        os.chmod(CONFIG_FILE, 0o600)
+        content = json.dumps(config, indent=2).encode("utf-8")
+        fd = os.open(CONFIG_FILE, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        with open(fd, "wb") as f:
+            f.write(content)
     except Exception as e:
         print(f"Error saving config: {e}")
+

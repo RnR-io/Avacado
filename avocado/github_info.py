@@ -14,7 +14,7 @@ def get_github_info():
     try:
         req = urllib.request.Request(
             API_URL,
-            headers={"User-Agent": "AvocadoTerminalApp/1.1"}
+            headers={"User-Agent": "AvocadoTerminalApp/2.0"}
         )
         with urllib.request.urlopen(req, timeout=3) as resp:
             data = json.loads(resp.read().decode('utf-8'))

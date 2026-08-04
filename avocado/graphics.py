@@ -1,60 +1,58 @@
 """
-PNG Image Graphics Engine & TrueColor Terminal Renderer v1.9.0
-Renders high-definition PNG image assets (assets/avocado_logo.png) as 24-bit TrueColor RGB Half-Block Image Matrix (▄)
-or iTerm2 / Kitty inline image protocols.
+PNG Image Graphics Engine & TrueColor Terminal Renderer v2.0.0
+Renders high-definition PNG image assets (assets/avocado_logo.png) with transparent background
+and dynamic theme color reaction.
 """
 import os
 import sys
-import base64
 import subprocess
 import struct
-
-def is_iterm2():
-    term = os.environ.get("TERM_PROGRAM", "")
-    return "iTerm" in term or "WezTerm" in term
-
-def is_kitty():
-    term = os.environ.get("TERM", "")
-    return "kitty" in term or "ghostty" in term
+import tempfile
 
 def load_bmp_pixels(bmp_path):
     """Parses uncompressed 24-bit / 32-bit BMP file into 2D RGB tuple list."""
-    with open(bmp_path, "rb") as f:
-        data = f.read()
+    try:
+        with open(bmp_path, "rb") as f:
+            data = f.read()
 
-    if data[:2] != b'BM':
+        if data[:2] != b'BM':
+            return [], 0, 0
+
+        pixel_offset = struct.unpack("<I", data[10:14])[0]
+        width, height = struct.unpack("<ii", data[18:26])
+        bpp = struct.unpack("<H", data[28:30])[0]
+
+        if bpp not in (24, 32):
+            return [], 0, 0
+
+        row_bytes = ((width * bpp + 31) // 32) * 4
+        pixels = []
+
+        for y in range(abs(height) - 1, -1, -1):
+            row = []
+            row_offset = pixel_offset + y * row_bytes
+            for x in range(width):
+                px_idx = row_offset + x * (bpp // 8)
+                if px_idx + 2 < len(data):
+                    b_val, g_val, r_val = data[px_idx], data[px_idx+1], data[px_idx+2]
+                    row.append((r_val, g_val, b_val))
+                else:
+                    row.append((0, 0, 0))
+            pixels.append(row)
+
+        return pixels, width, abs(height)
+    except Exception:
         return [], 0, 0
 
-    pixel_offset = struct.unpack("<I", data[10:14])[0]
-    width, height = struct.unpack("<ii", data[18:26])
-    bpp = struct.unpack("<H", data[28:30])[0]
-
-    if bpp not in (24, 32):
-        return [], 0, 0
-
-    row_bytes = ((width * bpp + 31) // 32) * 4
-    pixels = []
-
-    for y in range(abs(height) - 1, -1, -1):
-        row = []
-        row_offset = pixel_offset + y * row_bytes
-        for x in range(width):
-            px_idx = row_offset + x * (bpp // 8)
-            if px_idx + 2 < len(data):
-                b_val, g_val, r_val = data[px_idx], data[px_idx+1], data[px_idx+2]
-                row.append((r_val, g_val, b_val))
-            else:
-                row.append((0, 0, 0))
-        pixels.append(row)
-
-    return pixels, width, abs(height)
-
-def render_truecolor_pixel_matrix(image_path, width=22):
+def render_truecolor_pixel_matrix(image_path, colors=None, width=22):
     """
-    Converts PNG image file into 24-bit TrueColor RGB Half-Block (▄) Image Matrix.
-    Renders 100% true native PNG image graphics in macOS Terminal.app, iTerm2, Kitty, Alacritty.
+    Converts PNG image file into transparent 24-bit TrueColor RGB Half-Block (▄) Matrix.
+    Masks out black/dark background pixels so terminal background shows through transparently,
+    and applies active theme tinting to avocado pixels.
     """
-    tmp_bmp = f"/tmp/avocado_term_{width}.bmp"
+    tmp_fd, tmp_bmp = tempfile.mkstemp(suffix=".bmp", prefix="avocado_term_")
+    os.close(tmp_fd)
+
     try:
         subprocess.run(
             ["sips", "-s", "format", "bmp", image_path, "--resampleWidth", str(width), "--out", tmp_bmp],
@@ -64,6 +62,11 @@ def render_truecolor_pixel_matrix(image_path, width=22):
         if not pixels or h < 2:
             return []
 
+        p_code = colors.get("primary", "\033[38;2;86;180;89m") if colors else "\033[38;2;86;180;89m"
+        a_code = colors.get("accent", "\033[38;2;163;209;107m") if colors else "\033[38;2;163;209;107m"
+        h_code = colors.get("header", "\033[38;2;244;208;63m") if colors else "\033[38;2;244;208;63m"
+        reset = "\033[0m"
+
         lines = []
         for y in range(0, h - 1, 2):
             line = ""
@@ -72,32 +75,62 @@ def render_truecolor_pixel_matrix(image_path, width=22):
             for x in range(w):
                 tr, tg, tb = top_row[x]
                 br, bg, bb = bot_row[x]
-                line += f"\033[48;2;{tr};{tg};{tb}m\033[38;2;{br};{bg};{bb}m▄\033[0m"
+
+                top_bg_dark = (tr + tg + tb) < 35
+                bot_bg_dark = (br + bg + bb) < 35
+
+                if top_bg_dark and bot_bg_dark:
+                    line += " "
+                elif top_bg_dark:
+                    if br > 180 and bg > 140:
+                        line += f"{h_code}▄{reset}"
+                    elif bg > br and bg > bb:
+                        line += f"{a_code}▄{reset}"
+                    else:
+                        line += f"{p_code}▄{reset}"
+                elif bot_bg_dark:
+                    if tr > 180 and tg > 140:
+                        line += f"{h_code}▀{reset}"
+                    elif tg > tr and tg > tb:
+                        line += f"{a_code}▀{reset}"
+                    else:
+                        line += f"{p_code}▀{reset}"
+                else:
+                    line += f"\033[48;2;{tr};{tg};{tb}m\033[38;2;{br};{bg};{bb}m▄{reset}"
             lines.append(line)
 
         return lines
     except Exception:
         return []
+    finally:
+        if os.path.exists(tmp_bmp):
+            try: os.remove(tmp_bmp)
+            except Exception: pass
 
-def get_avocado_graphic(width=22):
-    """Returns TrueColor PNG Image Matrix from assets/avocado_logo.png."""
+def get_avocado_graphic(colors=None, width=22):
+    """Returns transparent, theme-colored Avocado Graphic."""
     asset_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets", "avocado_logo.png")
     if os.path.exists(asset_path):
-        lines = render_truecolor_pixel_matrix(asset_path, width=width)
+        lines = render_truecolor_pixel_matrix(asset_path, colors=colors, width=width)
         if lines:
             return lines
 
-    # Fallback high-density ASCII
+    p = colors.get("primary", "\033[32m") if colors else "\033[32m"
+    a = colors.get("accent", "\033[36m") if colors else "\033[36m"
+    h = colors.get("header", "\033[33m") if colors else "\033[33m"
+    r = "\033[0m"
+
     return [
-        "       .------------.",
-        "     .'   .------.   '.",
-        "    /   .'   @@   '.   \\",
-        "   |   /   .----.   \\   |",
-        "   |  |   /  (O) \\   |  |",
-        "   |  |  |  (###) |  |  |",
-        "   |  |   \\  (O) /   |  |",
-        "   |   \\   '----'   /   |",
-        "    \\   '.        .'   /",
-        "     '.   '------'   .'",
-        "       '------------'"
+        f"       {p}.------------.{r}",
+        f"     {p}.'   {a}.------.   {p}'.{r}",
+        f"    {p}/   {a}.'   {h}@@   {a}'.   {p}\\ {r}",
+        f"   {p}|   {a}/   {h}.----.   {a}\\   {p}|{r}",
+        f"   {p}|  {a}|   {h}/  (O) \\   {a}|  {p}|{r}",
+        f"   {p}|  {a}|  {h}|  (###) |  {a}|  {p}|{r}",
+        f"   {p}|  {a}|   {h}\\  (O) /   {a}|  {p}|{r}",
+        f"   {p}|   {a}\\   {h}'----'   {a}/   {p}|{r}",
+        f"    {p}\\   {a}'.        .'   {p}/ {r}",
+        f"     {p}'.   {a}'------'   {p}.'  {r}",
+        f"       {p}'------------'   {r}"
     ]
+

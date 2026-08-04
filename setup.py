@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="avocado-cli",
-    version="1.0.0",
+    version="2.0.0",
     description="Native macOS Terminal Dashboard & CLI App",
     author="RnR-io",
     url="https://github.com/RnR-io/Avacado",

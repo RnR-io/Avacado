@@ -89,28 +89,29 @@ def render_neofetch(colors, status=None):
         from avocado.status import get_macos_status
         status = get_macos_status()
 
-    # Get TrueColor PNG Image Matrix (assets/avocado_logo.png)
-    graphic_lines = get_avocado_graphic(width=22)
+    # Get TrueColor PNG Image Matrix (assets/avocado_logo.png) with theme colors & transparent background
+    graphic_lines = get_avocado_graphic(colors=colors, width=22)
 
     cpu_bar = make_progress_bar(status['cpu_usage'], 10)
     ram_bar = make_progress_bar(status['ram_pct'], 10)
+
+    batt = status.get('batt', {'pct': 100, 'power_src': 'AC Power'})
 
     sys_info = [
         f"{BOLD}{p}user@macbook-pro{r}",
         f"{m}----------------{r}",
         f"{t}OS:{r}                {status['os']}",
         f"{t}Host:{r}              {status['model']}",
-        f"{t}Kernel:{r}            {status['kernel']}",
+        f"{t}Chip:{r}              {status['chip_brand']}",
         f"{t}GPU:{r}               {status['gpu']}",
-        f"{t}CPU:{r}               {status['cpu_brand']}",
-        f"{t}CPU Graph:{r}         [{a}{cpu_bar}{r}] {status['cpu_usage']}%",
-        f"{t}RAM Graph:{r}         [{a}{ram_bar}{r}] {status['used_ram_gb']}/{status['total_ram_gb']}GB",
-        f"{t}Battery:{r}           🔋 {status['batt_pct']}% ({status['power_source']})",
-        f"{t}Network:{r}           {status['local_ip']} ({status['net_if']})",
+        f"{t}CPU Load:{r}          [{a}{cpu_bar}{r}] {status['cpu_usage']}%",
+        f"{t}RAM Usage:{r}         [{a}{ram_bar}{r}] {status['used_ram_gb']}/{status['total_ram_gb']}GB",
+        f"{t}Battery:{r}           🔋 {batt['pct']}% ({batt['power_src']})",
+        f"{t}Network:{r}           {status['local_ip']}",
         f"{t}Uptime:{r}            {status['uptime']}"
     ]
 
-    out_lines = [f"\n{BOLD}{a}AVOCADO HIGH-DEFINITION PNG IMAGE GRAPHIC SUMMARY{r}\n"]
+    out_lines = [f"\n{BOLD}{a}AVOCADO SYSTEM TELEMETRY SUMMARY (v2.0.0){r}\n"]
 
     max_rows = max(len(graphic_lines), len(sys_info))
     for i in range(max_rows):
@@ -135,67 +136,69 @@ def render_dashboard(status, weather, config):
     except Exception:
         cols, rows = 100, 28
 
-    w = max(76, cols - 2)
+    w = max(80, cols - 2)
     lines = []
 
-    max_visible_rows = max(6, min(rows - 9, 14))
+    max_visible_rows = max(7, min(rows - 9, 14))
 
-    # Single-Panel Stacked Layout for small/narrow windows (cols < 95)
+    # Single-Panel Stacked Layout for narrow windows (cols < 95)
     if cols < 95:
         lines.append(f"{b}┌{'─' * (w - 2)}┐{r}")
-        title_str = " [AVOCADO] MAC OS TERMINAL DASHBOARD "
+        title_str = " AVOCADO MAC OS DASHBOARD "
         lines.append(f"{b}│{r} {a}.---.{r} {BOLD}{p}{title_str}{r}{' ' * max(0, w - 8 - len(title_str))}{b}│{r}")
         lines.append(f"{b}├{'─' * (w - 2)}┤{r}")
 
-        lines.append(f"{b}│{r} {BOLD}{h}💻 HARDWARE TELEMETRY{r}{' ' * max(0, w - 23)}{b}│{r}")
-        lines.append(f"{b}│{r}  " + truncate_and_pad(f"Model: {status['model']} | OS: {status['os']} | CPU: {status['cpu_brand']}", w - 5) + f" {b}│{r}")
-        lines.append(f"{b}│{r}  " + truncate_and_pad(f"CPU: {status['cpu_usage']}% | RAM: {status['used_ram_gb']}/{status['total_ram_gb']}GB | Disk: {status['disk_avail']} Free", w - 5) + f" {b}│{r}")
+        lines.append(f"{b}│{r} {BOLD}{h}Hardware Telemetry{r}{' ' * max(0, w - 21)}{b}│{r}")
+        lines.append(f"{b}│{r}  " + truncate_and_pad(f"Model: {status['model']} | OS: {status['os']} | CPU: {status['chip_brand']}", w - 5) + f" {b}│{r}")
+        lines.append(f"{b}│{r}  " + truncate_and_pad(f"CPU: {status['cpu_usage']}% | RAM: {status['used_ram_gb']}/{status['total_ram_gb']}GB | Disk: {status['disk_free_gb']}G Free", w - 5) + f" {b}│{r}")
         lines.append(f"{b}├{'─' * (w - 2)}┤{r}")
 
-        lines.append(f"{b}│{r} {BOLD}{h}🌦 WEATHER ({weather.get('city', 'Location')}){r}{' ' * max(0, w - 15 - len(weather.get('city', 'Location')))}{b}│{r}")
+        lines.append(f"{b}│{r} {BOLD}{h}Weather ({weather.get('city', 'Location')}){r}{' ' * max(0, w - 12 - len(weather.get('city', 'Location')))}{b}│{r}")
         lines.append(f"{b}│{r}  " + truncate_and_pad(f"Temp: {weather.get('temp')} ({weather.get('desc')}) | Wind: {weather.get('wind')}", w - 5) + f" {b}│{r}")
         lines.append(f"{b}├{'─' * (w - 2)}┤{r}")
 
         clock_info = get_clock_info()
-        lines.append(f"{b}│{r} {BOLD}{h}📅 CALENDAR ({clock_info['time']}){r}{' ' * max(0, w - 19 - len(clock_info['time']))}{b}│{r}")
+        lines.append(f"{b}│{r} {BOLD}{h}Calendar ({clock_info['time']}){r}{' ' * max(0, w - 13 - len(clock_info['time']))}{b}│{r}")
         for cl in get_calendar_lines()[:min(5, max_visible_rows)]:
             lines.append(f"{b}│{r}  " + truncate_and_pad(cl, w - 5) + f" {b}│{r}")
         lines.append(f"{b}└{'─' * (w - 2)}┘{r}")
         return "\n".join(lines)
 
     # 3-Column Equal Split Layout for Wide Terminals (cols >= 95)
-    col_w = max(28, (w - 6) // 3)
-    total_inner_w = col_w * 3 + 4
+    # Auto-scale box boundary perfectly to terminal window width
+    col_w1 = (w - 6) // 3
+    col_w2 = (w - 6) // 3
+    col_w3 = w - 6 - col_w1 - col_w2
+    total_inner_w = col_w1 + col_w2 + col_w3 + 4
 
-    lines.append(f"{b}┌{'─' * (total_inner_w)}┐{r}")
-    title_str = " [AVOCADO] MAC OS TERMINAL DASHBOARD & CONTROL CENTER "
+    lines.append(f"{b}┌{'─' * total_inner_w}┐{r}")
+    title_str = " AVOCADO MAC OS TERMINAL DASHBOARD & CONTROL CENTER "
     lines.append(f"{b}│{r} {a}.---.{r}  {BOLD}{p}{title_str}{r}{' ' * max(0, total_inner_w - 9 - len(title_str))}{b}│{r}")
-    lines.append(f"{b}│{r} {p}( (O) ){r} {m}TrueColor PNG Image Graphics | Responsive Height/Width Grid{r}{' ' * max(0, total_inner_w - 71)}{b}│{r}")
-    lines.append(f"{b}├{'─' * col_w}┬{'─' * (col_w + 2)}┬{'─' * col_w}┤{r}")
+    lines.append(f"{b}│{r} {p}( (O) ){r} {m}v2.0.0 | Native System Telemetry | Auto-Scaled Window Boundaries{r}{' ' * max(0, total_inner_w - 71)}{b}│{r}")
+    lines.append(f"{b}├{'─' * col_w1}┬{'─' * (col_w2 + 2)}┬{'─' * col_w3}┤{r}")
 
-    c1_h = truncate_and_pad(f"{BOLD}{h}💻 HARDWARE TELEMETRY{r}", col_w)
-    c2_h = truncate_and_pad(f"{BOLD}{h}🌦 ASCII WEATHER{r}", col_w + 2)
-    c3_h = truncate_and_pad(f"{BOLD}{h}📅 CALENDAR & 12H TIME{r}", col_w)
+    c1_h = truncate_and_pad(f"{BOLD}{h}Hardware Telemetry{r}", col_w1)
+    c2_h = truncate_and_pad(f"{BOLD}{h}Weather{r}", col_w2 + 2)
+    c3_h = truncate_and_pad(f"{BOLD}{h}Calendar & Time{r}", col_w3)
 
     lines.append(f"{b}│{r} {c1_h} {b}│{r} {c2_h} {b}│{r} {c3_h} {b}│{r}")
-    lines.append(f"{b}├{'─' * col_w}┼{'─' * (col_w + 2)}┼{'─' * col_w}┤{r}")
+    lines.append(f"{b}├{'─' * col_w1}┼{'─' * (col_w2 + 2)}┼{'─' * col_w3}┤{r}")
 
     cpu_bar = make_progress_bar(status['cpu_usage'], 8)
     ram_bar = make_progress_bar(status['ram_pct'], 8)
     disk_bar = make_progress_bar(status['disk_pct'], 8)
+    batt = status.get('batt', {'pct': 100, 'power_src': 'AC Power'})
 
     col1 = [
         f"{t}Model:{r} {status['model']}",
         f"{t}OS:{r} {status['os']}",
-        f"{t}Kernel:{r} {status['kernel']}",
+        f"{t}Chip:{r} {status['chip_brand']}",
         f"{t}GPU:{r} {status['gpu']}",
-        f"{t}CPU:{r} {status['cpu_brand']}",
         f"{t}CPU Load:{r} [{a}{cpu_bar}{r}] {status['cpu_usage']}%",
-        f"{t}Load Avg:{r} {status['load_avg']}",
         f"{t}RAM:{r} [{a}{ram_bar}{r}] {status['used_ram_gb']}/{status['total_ram_gb']}G",
-        f"{m}Free:{r} {status['free_ram_gb']}G | {m}Swap:{r} {status['swap_used']}",
-        f"{t}Disk:{r} [{a}{disk_bar}{r}] {status['disk_avail']} Free",
-        f"{t}Battery:{r} 🔋 {status['batt_pct']}% ({status['power_source'][:8]})",
+        f"{m}Free:{r} {status['free_ram_gb']}G | {m}Cache:{r} {status['cache_ram_gb']}G",
+        f"{t}Disk:{r} [{a}{disk_bar}{r}] {status['disk_free_gb']}G Free",
+        f"{t}Battery:{r} 🔋 {batt['pct']}% ({batt['power_src']})",
         f"{t}IP:{r} {status['local_ip']}",
         f"{t}Uptime:{r} {status['uptime']}"
     ]
@@ -203,8 +206,8 @@ def render_dashboard(status, weather, config):
     art_lines = weather.get("art", [""])
     col2 = [
         f"{BOLD}{a}{weather.get('city', 'Location')}{r}",
-        f"Temp: {BOLD}{weather.get('temp', '22°C')}{r} ({weather.get('desc', 'Clear')})",
-        f"Wind: {weather.get('wind', '12 km/h')}",
+        f"Temp: {BOLD}{weather.get('temp', '24°C')}{r} ({weather.get('desc', 'Clear')})",
+        f"Wind: {weather.get('wind', '10 km/h')}",
         ""
     ]
     for art_l in art_lines:
@@ -234,12 +237,13 @@ def render_dashboard(status, weather, config):
         c2 = col2[idx] if idx < len(col2) else ""
         c3 = col3[idx] if idx < len(col3) else ""
 
-        p_c1 = truncate_and_pad(c1, col_w)
-        p_c2 = truncate_and_pad(c2, col_w + 2)
-        p_c3 = truncate_and_pad(c3, col_w)
+        p_c1 = truncate_and_pad(c1, col_w1)
+        p_c2 = truncate_and_pad(c2, col_w2 + 2)
+        p_c3 = truncate_and_pad(c3, col_w3)
 
         lines.append(f"{b}│{r} {p_c1} {b}│{r} {p_c2} {b}│{r} {p_c3} {b}│{r}")
 
-    lines.append(f"{b}└{'─' * col_w}┴{'─' * (col_w + 2)}┴{'─' * col_w}┘{r}")
+    lines.append(f"{b}└{'─' * col_w1}┴{'─' * (col_w2 + 2)}┴{'─' * col_w3}┘{r}")
 
     return "\n".join(lines)
+

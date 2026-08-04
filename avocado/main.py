@@ -1,6 +1,6 @@
 """
-Avocado Terminal Dashboard Main CLI Entry Point v1.5.0
-Features 3-Column Equal Split Layout, Full-Screen Hardware Telemetry & Graphs Page,
+Avocado Terminal Dashboard Main CLI Entry Point v2.0.0
+Features Responsive Full-Window Layout, 2-Column Hardware Telemetry View,
 Arrow-Key TUI Menu, Google Search Launcher, and GitHub Repo Info.
 """
 import sys
@@ -54,8 +54,8 @@ def save_readline_history():
 
 def run_google_search(query=None):
     if not query:
-        print(f"\n{BOLD}🔍 GOOGLE SEARCH LAUNCHER{r}")
-        query = input(f"Enter Google search query: ").strip()
+        print(f"\n{BOLD}🔍 GOOGLE SEARCH LAUNCHER{RESET}")
+        query = input("Enter Google search query: ").strip()
 
     if query:
         search_url = f"https://www.google.com/search?q={urllib.parse.quote(query)}"
@@ -75,7 +75,7 @@ def render_github_page():
   • \033[1mRepository:\033[0m   {info['full_name']}
   • \033[1mDescription:\033[0m  {info['description']}
   • \033[1mAuthor:\033[0m       {info['owner']}
-  • \033[1mVersion Tag:\033[0m  v1.5.0
+  • \033[1mVersion Tag:\033[0m  v2.0.0
   • \033[1mLicense:\033[0m      {info['license']}
   • \033[1mURL:\033[0m          {info['html_url']}
   • \033[1mUpdated:\033[0m      {info['updated_at']}
@@ -114,14 +114,14 @@ def run_settings_prompt(config):
 def run_tui_menu_navigation(config):
     from avocado.menu import run_menu
     opts = [
-        "1. Dashboard View (3-Column Equal Split Grid)",
-        "2. Full-Screen Hardware Telemetry & Real-Time Graphs",
+        "1. Dashboard View (Auto-Scaled Window Boundaries)",
+        "2. Hardware Telemetry Page",
         "3. Google Search Launcher",
         "4. GitHub Repository Info & About",
         "5. Terminal Settings & Preferences",
-        "6. Monthly Calendar & 12H Digital Time",
+        "6. Calendar & Time",
         "7. Weather Forecast & ASCII Art",
-        "8. Neofetch Hardware Telemetry Summary",
+        "8. Neofetch Summary",
         "9. Exit Avocado"
     ]
     idx = run_menu("🥑 AVOCADO INTERACTIVE TUI MENU", opts)
@@ -137,7 +137,7 @@ def run_tui_menu_navigation(config):
     return "dashboard"
 
 def main():
-    parser = argparse.ArgumentParser(description="Avocado: Native macOS Terminal Dashboard & CLI App v1.5.0")
+    parser = argparse.ArgumentParser(description="Avocado: Native macOS Terminal Dashboard & CLI App v2.0.0")
     parser.add_argument("--status", action="store_true", help="Print expanded laptop hardware telemetry and exit")
     parser.add_argument("--hardware", action="store_true", help="Launch Full-Screen Hardware Telemetry & Graphs View")
     parser.add_argument("--weather", type=str, help="Get weather forecast for a city")
@@ -173,16 +173,17 @@ def main():
 
     if args.status:
         st = get_macos_status()
+        batt = st.get('batt', {'pct': 100, 'power_src': 'AC Power'})
         print(f"Model: {st['model']} ({st['os']})")
-        print(f"Kernel: {st['kernel']} | GPU: {st['gpu']}")
-        print(f"CPU: {st['cpu_brand']} - Load: {st['cpu_usage']}% (User: {st['cpu_user']}% | Sys: {st['cpu_sys']}%) [Load Avg: {st['load_avg']}]")
-        print(f"Sparkline: [{st['sparkline']}]")
-        print(f"RAM: {st['used_ram_gb']}GB / {st['total_ram_gb']}GB ({st['ram_pct']}%) [Free: {st['free_ram_gb']}GB | Wired: {st['wired_ram_gb']}GB | Swap: {st['swap_used']}]")
-        print(f"Disk: {st['disk_used']} / {st['disk_total']} ({st['disk_avail']} Free)")
-        print(f"Battery: {st['batt_pct']}% ({st['power_source']})")
-        print(f"Network: {st['local_ip']} ({st['net_if']})")
+        print(f"Chip: {st['chip_brand']} | GPU: {st['gpu']}")
+        print(f"CPU Load: {st['cpu_usage']}% | Load Avg: {st['load_str']}")
+        print(f"RAM: {st['used_ram_gb']}GB / {st['total_ram_gb']}GB ({st['ram_pct']}%) [Free: {st['free_ram_gb']}GB | Cache: {st['cache_ram_gb']}GB]")
+        print(f"Disk: {st['disk_used_gb']}G / {st['disk_total_gb']}G ({st['disk_free_gb']}G Free)")
+        print(f"Battery: {batt['pct']}% ({batt['power_src']})")
+        print(f"Network IP: {st['local_ip']}")
         print(f"Uptime: {st['uptime']}")
         return
+
 
     if args.weather:
         w = get_weather(args.weather, config.get("temp_unit", "C"))
