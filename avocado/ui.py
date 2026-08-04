@@ -111,7 +111,7 @@ def render_neofetch(colors, status=None):
         f"{t}Uptime:{r}            {status['uptime']}"
     ]
 
-    out_lines = [f"\n{BOLD}{a}AVOCADO SYSTEM TELEMETRY SUMMARY (v2.0.0){r}\n"]
+    out_lines = [f"\n{BOLD}{a}AVOCADO TELEMETRY{r}\n"]
 
     max_rows = max(len(graphic_lines), len(sys_info))
     for i in range(max_rows):
@@ -144,7 +144,7 @@ def render_dashboard(status, weather, config):
     # Single-Panel Stacked Layout for narrow windows (cols < 95)
     if cols < 95:
         lines.append(f"{b}┌{'─' * (w - 2)}┐{r}")
-        title_str = " AVOCADO MAC OS DASHBOARD "
+        title_str = " AVOCADO DASHBOARD "
         lines.append(f"{b}│{r} {a}.---.{r} {BOLD}{p}{title_str}{r}{' ' * max(0, w - 8 - len(title_str))}{b}│{r}")
         lines.append(f"{b}├{'─' * (w - 2)}┤{r}")
 
@@ -172,10 +172,12 @@ def render_dashboard(status, weather, config):
     total_inner_w = col_w1 + col_w2 + col_w3 + 4
 
     lines.append(f"{b}┌{'─' * total_inner_w}┐{r}")
-    title_str = " AVOCADO MAC OS TERMINAL DASHBOARD & CONTROL CENTER "
+    title_str = " AVOCADO CONTROL CENTER "
+    sub_str = "v2.0.0 | Native Telemetry Dashboard"
     lines.append(f"{b}│{r} {a}.---.{r}  {BOLD}{p}{title_str}{r}{' ' * max(0, total_inner_w - 9 - len(title_str))}{b}│{r}")
-    lines.append(f"{b}│{r} {p}( (O) ){r} {m}v2.0.0 | Native System Telemetry | Auto-Scaled Window Boundaries{r}{' ' * max(0, total_inner_w - 71)}{b}│{r}")
+    lines.append(f"{b}│{r} {p}( (O) ){r} {m}{sub_str}{r}{' ' * max(0, total_inner_w - 9 - len(sub_str))}{b}│{r}")
     lines.append(f"{b}├{'─' * col_w1}┬{'─' * (col_w2 + 2)}┬{'─' * col_w3}┤{r}")
+
 
     c1_h = truncate_and_pad(f"{BOLD}{h}Hardware Telemetry{r}", col_w1)
     c2_h = truncate_and_pad(f"{BOLD}{h}Weather{r}", col_w2 + 2)

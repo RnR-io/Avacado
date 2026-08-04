@@ -287,15 +287,19 @@ def render_fullscreen_hardware_page(colors):
         term_cols = 100
     width = max(90, term_cols)
 
+    p_col = colors.get("primary", GREEN_COL) if colors else GREEN_COL
+    a_col = colors.get("accent", GREEN_COL) if colors else GREEN_COL
+    h_col = colors.get("header", YELLOW_COL) if colors else YELLOW_COL
+
     # Top Status Bar
     header_left = f"{HEADER_COL}Status{RESET}  Health {GREEN_COL}● 100{RESET} {MUTED_COL}All clear{RESET}  {TEXT_COL}{st['model']} · {st['chip_brand']} · RAM {st['total_ram_gb']} GB · Disk {st['disk_total_gb']} GB · {st['os']} · up {st['uptime']}{RESET}"
     
-    # ASCII Art top right
+    # Avocado ASCII Art Logo top right matching theme
     ascii_art = [
-        "  /\\_/\\  ",
-        " / o o \\___",
-        " \\ =-=   ___/",
-        "  (-mm-(____/"
+        f"   {p_col},---.{RESET}   ",
+        f"  {p_col}/ {a_col}(o) {p_col}\\  {RESET}",
+        f" {p_col}| {h_col}(###) {p_col}| {RESET}",
+        f"  {p_col}'---'{RESET}    "
     ]
 
     out = []
@@ -304,11 +308,12 @@ def render_fullscreen_hardware_page(colors):
     art_col_w = 16
     left_w = width - art_col_w
     
-    out.append(f"{header_left}{' ' * max(0, left_w - len(st['model']) - 75)}{MUTED_COL}{ascii_art[0]}{RESET}")
-    out.append(f"{' ' * left_w}{MUTED_COL}{ascii_art[1]}{RESET}")
-    out.append(f"{' ' * left_w}{MUTED_COL}{ascii_art[2]}{RESET}")
-    out.append(f"{' ' * left_w}{MUTED_COL}{ascii_art[3]}{RESET}")
+    out.append(f"{header_left}{' ' * max(0, left_w - len(st['model']) - 75)}{ascii_art[0]}")
+    out.append(f"{' ' * left_w}{ascii_art[1]}")
+    out.append(f"{' ' * left_w}{ascii_art[2]}")
+    out.append(f"{' ' * left_w}{ascii_art[3]}")
     out.append("")
+
 
     # Left Column (CPU, Disk, Processes) & Right Column (Memory, Power, Network)
     col_width = (width // 2) - 4

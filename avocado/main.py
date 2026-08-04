@@ -24,7 +24,7 @@ from avocado.github_info import get_github_info, open_github_in_browser
 from avocado.ui import render_dashboard, render_neofetch, clear_screen, get_theme, RESET, BOLD, DIM
 
 HISTORY_FILE = os.path.join(CONFIG_DIR, "history")
-COMMANDS = ["help", "status", "hardware", "weather", "calendar", "google", "github", "neofetch", "settings", "theme", "clear", "quit", "exit"]
+COMMANDS = ["help", "status", "hardware", "weather", "calendar", "google", "github", "neofetch", "settings", "theme", "version", "v", "clear", "quit", "exit"]
 
 def setup_readline():
     if not HAVE_READLINE: return
@@ -138,6 +138,7 @@ def run_tui_menu_navigation(config):
 
 def main():
     parser = argparse.ArgumentParser(description="Avocado: Native macOS Terminal Dashboard & CLI App v2.0.0")
+    parser.add_argument("-v", "-V", "--version", action="store_true", help="Print Avocado version info and exit")
     parser.add_argument("--status", action="store_true", help="Print expanded laptop hardware telemetry and exit")
     parser.add_argument("--hardware", action="store_true", help="Launch Full-Screen Hardware Telemetry & Graphs View")
     parser.add_argument("--weather", type=str, help="Get weather forecast for a city")
@@ -150,6 +151,11 @@ def main():
     parser.add_argument("--once", action="store_true", help="Render dashboard once and exit")
 
     args = parser.parse_args()
+
+    if args.version:
+        print("🥑 Avocado v2.0.0 (Native macOS Terminal Dashboard)")
+        return
+
     config = load_config()
 
     colors = get_theme(config.get("theme", "avocado"))
@@ -316,6 +322,12 @@ Available Avocado Navigation & Commands:
                 save_config(config)
                 print(f"Theme updated to '{sub_args[0]}'!")
                 time.sleep(1)
+        elif cmd in ["v", "version", "-v", "--version"]:
+            print(f"\n{BOLD}🥑 Avocado Terminal App v2.0.0{RESET}")
+            print("Native macOS Hardware Telemetry & Dashboard Control Center")
+            print("Repository: https://github.com/RnR-io/Avacado")
+            print("License: MIT")
+            input("\nPress Enter to return to dashboard...")
         elif cmd == "clear":
             clear_screen()
         else:
