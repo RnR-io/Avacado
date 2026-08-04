@@ -83,18 +83,24 @@ def render_neofetch(colors, status=None):
     a = colors["accent"]
     t = colors["text"]
     m = colors["muted"]
+    b = colors["border"]
     r = RESET
 
     if not status:
         from avocado.status import get_macos_status
         status = get_macos_status()
 
-    # Get TrueColor PNG Image Matrix (assets/avocado_logo.png) with theme colors & transparent background
+    try:
+        cols, _ = os.get_terminal_size()
+    except Exception:
+        cols = 100
+
+    w = max(80, cols - 2)
+
     graphic_lines = get_avocado_graphic(colors=colors, width=22)
 
     cpu_bar = make_progress_bar(status['cpu_usage'], 10)
     ram_bar = make_progress_bar(status['ram_pct'], 10)
-
     batt = status.get('batt', {'pct': 100, 'power_src': 'AC Power'})
 
     sys_info = [
@@ -111,11 +117,15 @@ def render_neofetch(colors, status=None):
         f"{t}Uptime:{r}            {status['uptime']}"
     ]
 
-    out_lines = [f"\n{BOLD}{a}GUACA TELEMETRY 🥑 (Guaca Mode Active){r}\n"]
-
     import re
     def get_visible_len(s):
         return len(re.sub(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])', '', s))
+
+    out_lines = []
+    out_lines.append(f"{b}┌{'─' * (w - 2)}┐{r}")
+    title_str = " GUACA TELEMETRY 🥑 (Guaca Mode Active) "
+    out_lines.append(f"{b}│{r} {BOLD}{a}{title_str}{r}{' ' * max(0, w - 4 - len(title_str))}{b}│{r}")
+    out_lines.append(f"{b}├{'─' * (w - 2)}┤{r}")
 
     max_rows = max(len(graphic_lines), len(sys_info))
     for i in range(max_rows):
@@ -123,9 +133,15 @@ def render_neofetch(colors, status=None):
         v_len = get_visible_len(art_l)
         padded_art = art_l + (" " * max(0, 28 - v_len))
         info_l = sys_info[i] if i < len(sys_info) else ""
-        out_lines.append(f"  {padded_art}  {info_l}")
+        row_str = f"  {padded_art}  {info_l}"
+        row_vis_len = 4 + 28 + 2 + get_visible_len(info_l)
+        pad_right = max(0, w - 2 - row_vis_len)
+        out_lines.append(f"{b}│{r}{row_str}{' ' * pad_right}{b}│{r}")
+
+    out_lines.append(f"{b}└{'─' * (w - 2)}┘{r}")
 
     return "\n".join(out_lines) + "\n"
+
 
 def render_dashboard(status, weather, config):
     colors = get_theme(config.get("theme", "avocado"))
