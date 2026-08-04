@@ -292,7 +292,8 @@ def render_fullscreen_hardware_page(colors):
     h_col = colors.get("header", YELLOW_COL) if colors else YELLOW_COL
 
     # Top Status Bar
-    header_left = f"{HEADER_COL}Status{RESET}  Health {GREEN_COL}● 100{RESET} {MUTED_COL}All clear{RESET}  {TEXT_COL}{st['model']} · {st['chip_brand']} · RAM {st['total_ram_gb']} GB · Disk {st['disk_total_gb']} GB · {st['os']} · up {st['uptime']}{RESET}"
+    header_left = f"{HEADER_COL}Guaca Telemetry{RESET}  Health {GREEN_COL}● 100{RESET} {MUTED_COL}Guaca Mode Active 🥑{RESET}  {TEXT_COL}{st['model']} · {st['chip_brand']} · RAM {st['total_ram_gb']} GB · Disk {st['disk_total_gb']} GB · {st['os']} · up {st['uptime']}{RESET}"
+
     
     # Avocado ASCII Art Logo top right matching theme
     ascii_art = [

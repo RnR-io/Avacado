@@ -1,6 +1,5 @@
-# 🥑 Avocado: Native macOS Terminal Dashboard & CLI App (v2.0.0 Public Beta)
+# 🥑 Avocado: Native macOS Terminal Dashboard & CLI App (v2.0.0)
 
-> **Project Status: Public Beta Release (v2.0.0)**  
 > **Developer:** RnR-io | **Repository:** [https://github.com/RnR-io/Avacado](https://github.com/RnR-io/Avacado)
 
 A pure native macOS terminal dashboard and control center application (CLI & TUI) built for macOS Terminal, iTerm2, Kitty, Alacritty, or zsh/bash. **Zero web servers, zero browsers, zero third-party dependencies required!**
@@ -11,10 +10,10 @@ A pure native macOS terminal dashboard and control center application (CLI & TUI
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
-│ .---.   AVOCADO CONTROL CENTER [BETA]                                                         │
-│ ( (O) ) v2.0.0 Beta Release | Live Native macOS Telemetry                                      │
+│ .---.   GUACA CONTROL CENTER                                                                  │
+│ ( (O) ) v2.0.0 | Guaca Mode Active 🥑                                                         │
 ├──────────────────────────────┬────────────────────────────────┬────────────────────────────────┤
-│ Hardware Telemetry             │ Weather                          │ Calendar & Time                  │
+│ Guaca Telemetry                │ Weather                          │ Calendar & Time                  │
 ├──────────────────────────────┼────────────────────────────────┼────────────────────────────────┤
 │ Model: Mac16,8                 │ Kollam                           │ TIME: 12:23:56 PM                │
 │ OS: macOS 26.6                 │ Temp: 27°C (Light rain shower)   │ Tuesday, August 04, 2026         │
@@ -31,7 +30,7 @@ A pure native macOS terminal dashboard and control center application (CLI & TUI
 │                                │  • 08-05: 27°C / 25°C            │                                  │
 │                                │  • 08-06: 28°C / 25°C            │                                  │
 └──────────────────────────────┴────────────────────────────────┴────────────────────────────────┘
-🥑 Avocado v2.0.0 (Beta) · Developer: RnR-io · Repository: https://github.com/RnR-io/Avacado
+🥑 Avocado v2.0.0 · Guaca Mode Active · Developer: RnR-io · Repository: https://github.com/RnR-io/Avacado
 ```
 
 ---
@@ -54,28 +53,26 @@ Once installed, run **`avocado`** (or **`avacado`**) in any terminal window!
 
 ---
 
-## 🌟 Key Features (v2.0.0 Beta)
+## 🌟 Key Features (v2.0.0)
 
-1. **💻 Live 2-Column Hardware Telemetry Page (`avocado --hardware`)**:
-   - Displays real-time macOS system load, per-core CPU breakdown (`Core1`, `Core10`), Apple Silicon P+E core layout (`10P+4E`), Memory (Used, Free, Cache), APFS disk metrics, battery health (100%), power source, cycle count, temperature, top 3 real processes, network throughput (Down/Up MB/s), local IP, and a theme-colored Avocado ASCII top logo.
+1. **🥑 Guaca Telemetry & Textured Teardrop Graphic**:
+   - Features symmetrical **Avocado Teardrop Shape** ASCII logo filled with organic texture patterns (`---`, `::-::-::`, `░`, `~~~`) and theme-reactive colors.
 
-2. **🥑 Multi-Color Gradient ASCII Avocado Graphic**:
-   - Custom high-density ASCII avocado logo featuring vertical multi-color gradient transitions (Green -> Lime -> Gold -> Red/Orange -> Purple -> Soft Blue).
+2. **⚡ Real-Time Live Data Polling (1.0s)**:
+   - Full-screen hardware telemetry view polls system load, RAM, APFS disk, battery health/temp, and processes live every 1 second.
 
 3. **🌦 IP Geolocation & Live Weather**:
    - Auto-detects location via IP geolocation and fetches live weather conditions, wind speeds, and dynamic forecast dates.
 
 4. **📐 Full-Window Box Boundary Auto-Scaling**:
-   - Outer and inner box grid borders auto-expand to fill the full terminal window width (`cols`) smoothly when opened or resized.
-
-5. **ℹ️ Version Info Command**:
-   - Run `avocado -v` or `avocado --version` to display instant version and build information.
+   - Outer and inner box grid borders auto-expand to fill full terminal window width (`cols`) smoothly.
 
 ---
 
 ## 📄 Development & License
 
 - **Developer:** RnR-io
-- **Status:** Public Beta Project
+- **Status:** Official v2.0.0 Release (Guaca Mode Active 🥑)
 - **License:** Distributed under the MIT License.
+
 

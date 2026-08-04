@@ -199,8 +199,9 @@ def main():
     args = parser.parse_args()
 
     if args.version:
-        print("🥑 Avocado v2.0.0 (Native macOS Terminal Dashboard)")
+        print("🥑 Avocado v2.0.0 (Guaca Mode Active 🥑)")
         return
+
 
     config = load_config()
     colors = get_theme(config.get("theme", "avocado"))
